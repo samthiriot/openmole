@@ -444,7 +444,7 @@ lazy val modifierHook = OsgiProject(pluginDir, "org.openmole.plugin.hook.modifie
 
 /* Method */
 
-def allMethod = Seq(evolution, directSampling, sensitivity)
+def allMethod = Seq(evolution, directSampling, sensitivity, microlcs)
 
 lazy val evolution = OsgiProject(pluginDir, "org.openmole.plugin.method.evolution", imports = Seq("*")) dependsOn(
   openmoleDSL, csvTool, toolsTask, pattern, collectionDomain % "test", boundsDomain % "test"
@@ -457,6 +457,7 @@ lazy val directSampling = OsgiProject(pluginDir, "org.openmole.plugin.method.dir
 
 lazy val sensitivity = OsgiProject(pluginDir, "org.openmole.plugin.method.sensitivity", imports = Seq("*")) dependsOn(exception, workflow, workspace, openmoleDSL, lhsSampling) settings (pluginSettings: _*)
 
+lazy val microlcs = OsgiProject(pluginDir, "org.openmole.plugin.method.microlcs", imports = Seq("*")) dependsOn(exception, workflow, workspace, openmoleDSL) settings (pluginSettings: _*)
 
 /* Sampling */
 
