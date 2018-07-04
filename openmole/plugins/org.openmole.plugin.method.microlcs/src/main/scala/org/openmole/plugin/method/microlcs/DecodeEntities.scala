@@ -26,6 +26,8 @@ import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
 import org.openmole.tool.logger.JavaLogger
 import org.openmole.core.workflow.dsl._
 
+import org.openmole.plugin.method.microlcs.Genes.Gene
+
 import scala.concurrent.duration.DurationConversions.Classifier
 
 object DecodeEntities {
@@ -45,9 +47,9 @@ object DecodeEntities {
 
   def apply[T](
     _characteristics: Seq[Val[Array[T]] forSome { type T }],
-    _actions:         Seq[Val[Q]] forSome { type Q })(implicit name: sourcecode.Name, definitionScope: DefinitionScope) = {
+    _actions:         Seq[Gene[U] forSome { type U }])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
-    ClosureTask("DecodeIndividuals") { (context, _, _) ⇒
+    ClosureTask("DecodeIndividuals") { (context, rng, _) ⇒
 
       // check input parameters: all the arrays for characteristics should be of the right size
       // ... build the list of the length of each list passed for characteristics, and keep only distinct values
@@ -68,7 +70,7 @@ object DecodeEntities {
           Entity(
             id = idx,
             characteristics = _characteristics.zipWithIndex.map { case (c, i) ⇒ Variable.unsecure(Val(c.name)(c.`type`), _characteristicsValues(i)(idx)) }.toArray,
-            actions = _actions.map(a ⇒ Variable.unsecure(a, null /* context(a) */ )).toArray
+            actions = _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context)(rng, newFile, fileService/* TODO */ ))).toArray
           )
       )
 

@@ -32,6 +32,8 @@ import org.openmole.core.workflow.validation.DataflowProblem._
 import org.openmole.core.workflow.validation._
 import org.openmole.core.workflow.transition.Slot
 
+import org.openmole.plugin.method.microlcs.Genes.Gene
+
 import Numeric.Implicits._
 import Ordering.Implicits._
 import scala.reflect.ClassTag
@@ -171,7 +173,7 @@ package object microlcs {
   )
 
   case class Entity(
-    id: Int,
+    id:              Int,
     characteristics: Array[Variable[_]],
     actions:         Array[Variable[_]]
   ) {
@@ -186,7 +188,7 @@ package object microlcs {
    */
   def MicroLCS(
     microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
-    microActions:         Seq[Val[U]] forSome { type U },
+    microActions:         Seq[Gene[U]] forSome { type U },
     iterations:           Int
   //evaluation:         Puzzle
   ): Puzzle = {
