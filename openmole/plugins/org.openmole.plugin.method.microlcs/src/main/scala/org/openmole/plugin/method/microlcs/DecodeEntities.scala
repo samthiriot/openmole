@@ -31,10 +31,10 @@ import org.openmole.core.workspace.NewFile
 import scala.concurrent.duration.DurationConversions.Classifier
 
 /**
-  * This simple utilitary task receives several variables containing arrays of values
-  * which corresponds to the characteristics of several entities delivered independantly;
-  * it converts these arrays into a unique array of entities.
-  */
+ * This simple utilitary task receives several variables containing arrays of values
+ * which corresponds to the characteristics of several entities delivered independantly;
+ * it converts these arrays into a unique array of entities.
+ */
 object DecodeEntities {
 
   // the value which will contain the list of the entities in the model

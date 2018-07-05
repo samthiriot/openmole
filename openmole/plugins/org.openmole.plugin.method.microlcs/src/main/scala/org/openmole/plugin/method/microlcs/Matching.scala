@@ -65,11 +65,15 @@ object Matching extends JavaLogger {
       System.out.println("matching on " + entities.length + " entities based on " + rules.length + " rules")
 
       // create the set of actions to be used
-      val rulesActionSet: Array[ClassifierRule] = entities.map { e ⇒ matchOrCoverIndividual(rules, e, _actions, context)(rng, newFile, fileService) }.toArray
-      System.out.println("Here are the rules: " + rulesActionSet)
+      val rulesActionSet: Array[ClassifierRule] =
+        entities.map { e ⇒ matchOrCoverIndividual(rules, e, _actions, context)(rng, newFile, fileService) }
+          .toArray
+      System.out.println("Here are the rules: " + rulesActionSet.toList)
 
       // apply the rules on entities
-      val entitiesUpdated: Array[Entity] = entities.zipWithIndex.map { case (e, i) ⇒ rulesActionSet(i).actUpon(e) }.toArray
+      val entitiesUpdated: Array[Entity] =
+        entities.zipWithIndex.map { case (e, i) ⇒ rulesActionSet(i).actUpon(e) }
+          .toArray
 
       List(
         Variable(DecodeEntities.varEntities, entitiesUpdated),

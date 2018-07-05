@@ -207,8 +207,8 @@ package object microlcs {
   def MicroLCS(
     microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
     microActions:         Seq[Genes.Gene[_]],
-    iterations:           Int
-  //evaluation:         Puzzle
+    iterations:           Int,
+    evaluation:           Puzzle
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
     //
@@ -219,7 +219,9 @@ package object microlcs {
 
     val doMatching = Matching(microActions)
 
-    decodeIndividuals -- doMatching
+    val encodeIndividuals = EncodeEntities(microCharacteristics, microActions)
+
+    decodeIndividuals -- doMatching -- encodeIndividuals -- evaluation
   }
 
 }
