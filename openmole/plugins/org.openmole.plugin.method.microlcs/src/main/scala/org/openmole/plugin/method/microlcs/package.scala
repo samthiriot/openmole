@@ -31,8 +31,9 @@ import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
 import org.openmole.core.workflow.validation.DataflowProblem._
 import org.openmole.core.workflow.validation._
 import org.openmole.core.workflow.transition.Slot
-
-import org.openmole.plugin.method.microlcs.Genes.Gene
+import org.openmole.tool.random.RandomProvider
+import org.openmole.core.workspace.NewFile
+import org.openmole.core.fileservice.FileService
 
 import Numeric.Implicits._
 import Ordering.Implicits._
@@ -132,23 +133,38 @@ package object microlcs {
 
   }
 
+  /*
   trait Action[T] {
-    def attributeName: String
+    def prototype: Val[T]
     def value: T
     override def toString: String = attributeName + "=" + value
   }
 
+  case class ActionValue[T](prototype: Val[T], value: T) extends Action[T]
+  */
+
   abstract class AbstractClassifier {
     def age: Int
     def conditions: Array[Condition[_]]
-    def actions: Array[Action[_]]
+    def actions: Array[Variable[Q] forSome { type Q }]
     override def toString: String = "if " + conditions.toList + " then " + actions.toList + "(" + age + ")"
+
+    /**
+     * Returns true if the conditions of the classifier are verified by the entity passed as a parameter
+     */
     def matches(entity: Entity): Boolean = conditions.zipWithIndex.forall { case (c, i) ⇒ c.acceptsUnsafe(entity.characteristics(i)) } // matches .value
+
+    /**
+     * Applies the action of the classifier over this entity.
+     * Returns a copy of this entity with different values for actions
+     */
+    def actUpon(entity: Entity): Entity = entity.copy(actions = actions.map(av ⇒ av).toArray) // TODO clone ???
+
   }
 
   case class ClassifierRule(
     conditions: Array[Condition[_]],
-    actions:    Array[Action[_]],
+    actions:    Array[Variable[Q] forSome { type Q }],
     age:        Int
   ) extends AbstractClassifier
 
@@ -157,11 +173,13 @@ package object microlcs {
     /**
      * Generates a random rule matching this entity
      */
-    def apply(e: Entity, rng: scala.util.Random): ClassifierRule = {
+    def apply(e: Entity, _actions: Seq[Genes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
 
       ClassifierRule(
-        e.characteristics.map(c ⇒ Condition(c, rng)),
-        Array(), // TODO
+        // generate random conditions matching entity characteristics
+        e.characteristics.map(c ⇒ Condition(c, rng())).toArray,
+        // micro actions are random
+        _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context))).toArray, // TODO
         0
       )
     }
@@ -188,15 +206,18 @@ package object microlcs {
    */
   def MicroLCS(
     microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
-    microActions:         Seq[Gene[U]] forSome { type U },
+    microActions:         Seq[Genes.Gene[_]],
     iterations:           Int
   //evaluation:         Puzzle
-  ): Puzzle = {
+  )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
+
+    //
+    // rng: RandomProvider,
 
     // the first step is to decode the initial lists of characteristics as lists of individuals.
     val decodeIndividuals = DecodeEntities(microCharacteristics, microActions)
 
-    val doMatching = Matching()
+    val doMatching = Matching(microActions)
 
     decodeIndividuals -- doMatching
   }

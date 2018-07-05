@@ -20,7 +20,7 @@ package org.openmole.plugin.method.microlcs
 import org.openmole.core.context.{ Context, Val, Variable }
 import org.openmole.core.expansion.FromContext
 import org.openmole.core.fileservice.FileService
-import org.openmole.core.workflow.domain.{ Bounds, Sized }
+import org.openmole.core.workflow.domain.{ Bounds, Fix, Sized }
 import org.openmole.core.workflow.sampling.Factor
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.random.RandomProvider
@@ -76,6 +76,11 @@ object Genes {
     }
 
   }
+
+  /*
+  implicit def factorIsSequenceOfEnumeration[D, T](f: Factor[D, Array[T]])(implicit fix: Fix[D, Array[T]]) =
+    SequenceOfEnumeration(f.prototype, fix.apply(f.domain).toVector)
+  */
 
   implicit def factorIsDoubleGene[D](f: Factor[D, Double])(implicit bounded: Bounds[D, Double]) =
     DoubleGene(f.prototype, bounded.min(f.domain), bounded.max(f.domain))

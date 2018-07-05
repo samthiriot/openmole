@@ -25,11 +25,16 @@ import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
 import org.openmole.tool.logger.JavaLogger
 import org.openmole.core.workflow.dsl._
-
-import org.openmole.plugin.method.microlcs.Genes.Gene
+import org.openmole.core.fileservice.FileService
+import org.openmole.core.workspace.NewFile
 
 import scala.concurrent.duration.DurationConversions.Classifier
 
+/**
+  * This simple utilitary task receives several variables containing arrays of values
+  * which corresponds to the characteristics of several entities delivered independantly;
+  * it converts these arrays into a unique array of entities.
+  */
 object DecodeEntities {
 
   // the value which will contain the list of the entities in the model
@@ -45,9 +50,10 @@ object DecodeEntities {
 
   }
 
+  //U] forSome { type U }
   def apply[T](
     _characteristics: Seq[Val[Array[T]] forSome { type T }],
-    _actions:         Seq[Gene[U] forSome { type U }])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+    _actions:         Seq[Genes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("DecodeIndividuals") { (context, rng, _) ⇒
 
@@ -70,7 +76,7 @@ object DecodeEntities {
           Entity(
             id = idx,
             characteristics = _characteristics.zipWithIndex.map { case (c, i) ⇒ Variable.unsecure(Val(c.name)(c.`type`), _characteristicsValues(i)(idx)) }.toArray,
-            actions = _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context)(rng, newFile, fileService/* TODO */ ))).toArray
+            actions = _actions.map(a ⇒ Variable.unsecure(a.prototype, null /*a.makeRandomValue(context)(rng, newFile, fileService)*/ )).toArray
           )
       )
 
