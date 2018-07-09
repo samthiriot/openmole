@@ -99,4 +99,15 @@ object Genes {
   implicit def factorIsBooleanGene[D](f: Factor[D, Boolean]) =
     BooleanGene(f.prototype)
 
+  /*
+  def doublesToGene(v:Val[Double], values: Array[Double]) =
+    DoubleGene(v.simpleName, values.min, values.max)
+
+  def integerToGene(v:Val[Int], values: Array[Int]) =
+    IntegerGene(v.simpleName, values.min, values.max)
+
+  def booleanToGene(v:Val[Boolean], values: Array[Boolean]) =
+    BooleanGene
+  */
+
 }

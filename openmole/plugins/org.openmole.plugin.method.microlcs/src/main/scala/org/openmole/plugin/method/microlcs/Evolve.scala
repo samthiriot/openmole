@@ -64,8 +64,9 @@ object Evolve extends JavaLogger {
     )
 
   def apply(
-    microActions: Seq[Genes.Gene[_]],
-    rulesCount:   Int
+    microActions:         Seq[Genes.Gene[_]],
+    microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
+    rulesCount:           Int
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Evolve") { (context, rng, _) ⇒
@@ -77,15 +78,20 @@ object Evolve extends JavaLogger {
 
       // TODO val tournamentSize =
 
-      System.out.println("Iteration "+iteration+": starting evolution of the "+rules.length+" rules...")
+      System.out.println("Iteration " + iteration + ": starting evolution of the " + rules.length + " rules...")
+
+      val mins: Array[Double] = context(DecodeEntities.varMin)
+      val maxs: Array[Double] = context(DecodeEntities.varMax)
 
       val rulesUpdated =
-        (1 to rules.length / 2).map( _ => tournamentSelectionWithN(4, rules)(rng) )
-                      .map{ case (a: ClassifierRule, b: ClassifierRule) => ClassifierRule.crossoverSinglePoint(a, b)(rng) }
-                      .flatMap{ case (c: ClassifierRule, d: ClassifierRule) => List(
-                          ClassifierRule.mutate(c, microActions, context)(rng, newFile, fileService),
-                          ClassifierRule.mutate(d, microActions, context)(rng, newFile, fileService)) }
-                      .toArray
+        (1 to rules.length / 2).map(_ ⇒ tournamentSelectionWithN(4, rules)(rng))
+          .map { case (a: ClassifierRule, b: ClassifierRule) ⇒ ClassifierRule.crossoverSinglePoint(a, b)(rng) }
+          .flatMap {
+            case (c: ClassifierRule, d: ClassifierRule) ⇒ List(
+              ClassifierRule.mutate(c, microActions, mins, maxs, context)(rng, newFile, fileService),
+              ClassifierRule.mutate(d, microActions, mins, maxs, context)(rng, newFile, fileService))
+          }
+          .toArray
 
       /*var x: Int = 0
       for (x ← 1 to 20) {
@@ -120,6 +126,8 @@ object Evolve extends JavaLogger {
 
       (inputs, outputs) += varIterations,
       (inputs, outputs) += DecodeEntities.varEntities,
+      (inputs, outputs) += DecodeEntities.varMin,
+      (inputs, outputs) += DecodeEntities.varMax
 
     )
 

@@ -36,7 +36,7 @@ object Delete extends JavaLogger {
 
   def apply(
     maxrules: Int
-    )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+  )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Evaluate") { (context, rng, _) ⇒
 
@@ -47,13 +47,12 @@ object Delete extends JavaLogger {
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
 
-
-      System.out.println("there are " + rules.length + "rules, we can only keep a max of "+maxrules)
+      System.out.println("there are " + rules.length + "rules, we can only keep a max of " + maxrules)
       System.out.println("(nota: deletion to be developed !)")
       // TODO
 
       List(
-        Variable(varRules, rules),
+        Variable(varRules, rules)
       )
 
     } set (
@@ -67,7 +66,9 @@ object Delete extends JavaLogger {
       outputs += varRules,
 
       (inputs, outputs) += varIterations,
-      (inputs, outputs) += DecodeEntities.varEntities
+      (inputs, outputs) += DecodeEntities.varEntities,
+      (inputs, outputs) += DecodeEntities.varMin,
+      (inputs, outputs) += DecodeEntities.varMax
 
     )
 

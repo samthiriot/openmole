@@ -60,10 +60,10 @@ object Evaluate extends JavaLogger {
       rulesUsed.zipWithIndex
         .foreach {
           case (r, i) ⇒
-            if (i <= 20) {
+            /*if (i <= 20) {
               System.out.println("on entity " + entities(i) + " rule " + r + " => " +
                 (microIndicatorsToMinimize.map(vals ⇒ vals(i)) ++ microIndicatorsToMaximize.map(vals ⇒ -vals(i))).toList)
-            }
+            }*/
 
             r.addPerformance(
               microIndicatorsToMinimize.map(vals ⇒ vals(i)) ++
@@ -91,7 +91,9 @@ object Evaluate extends JavaLogger {
       outputs += varRules,
 
       (inputs, outputs) += varIterations,
-      (inputs, outputs) += DecodeEntities.varEntities
+      (inputs, outputs) += DecodeEntities.varEntities,
+      (inputs, outputs) += DecodeEntities.varMin,
+      (inputs, outputs) += DecodeEntities.varMax
     )
 
   }

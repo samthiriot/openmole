@@ -27,6 +27,7 @@ import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workflow.dsl._
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workspace.NewFile
+import org.openmole.plugin.method.microlcs.DecodeEntities.{ varMax, varMin }
 import org.openmole.tool.random.RandomProvider
 
 object Matching extends JavaLogger {
@@ -106,7 +107,10 @@ object Matching extends JavaLogger {
       // ... the entities we decoded
       outputs += varRules,
       // ... the current iteration
-      outputs += varIterations
+      outputs += varIterations,
+
+      (inputs, outputs) += DecodeEntities.varMin,
+      (inputs, outputs) += DecodeEntities.varMax
     )
 
   }

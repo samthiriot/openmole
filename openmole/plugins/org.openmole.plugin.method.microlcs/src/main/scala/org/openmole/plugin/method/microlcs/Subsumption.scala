@@ -37,7 +37,7 @@ import scala.annotation.tailrec
 object Subsumption extends JavaLogger {
 
   @tailrec
-  def absorbSubsumed(r: ClassifierRule, rules: List[ClassifierRule], acc: List[ClassifierRule]): (ClassifierRule, List[ClassifierRule]) = rules match {
+  def absorbSubsumed(r: ClassifierRule, epsilons: Array[Double], rules: List[ClassifierRule], acc: List[ClassifierRule]): (ClassifierRule, List[ClassifierRule]) = rules match {
     case Nil ⇒
       //System.out.println("finished processing " + r + " and returning " + acc.length + " rules")
       (r, acc)
@@ -46,9 +46,9 @@ object Subsumption extends JavaLogger {
 
       if (r eq r2) {
         //System.out.println("its the same !")
-        absorbSubsumed(r, tail, acc)
+        absorbSubsumed(r, epsilons, tail, acc)
       }
-      else if ((r.sameActions(r2)) && (r.sameConditions(r2) || (r.subsums(r2) && r.similarPerformance(r2, 10.0)))) {
+      else if ((r.sameActions(r2)) && (r.sameConditions(r2) || (r.subsums(r2) && r.similarPerformance(r2, epsilons)))) {
         //System.out.println("comparing rules(" + tail.length + " remaining):\n\t" + r + "\n\t" + r2)
         //System.out.println("=> subsuming or the same")
         // absorb r2 into r
@@ -56,17 +56,17 @@ object Subsumption extends JavaLogger {
         r.absorb(r2)
         // continue, but do not consider the absorbed rule anymore
         //System.out.println("continuing recursively to process the " + tail.length + " remaining elements (" + acc.length + " accumulated)")
-        absorbSubsumed(r, tail, acc)
+        absorbSubsumed(r, epsilons, tail, acc)
 
       }
       else {
         //System.out.println("continuing")
-        absorbSubsumed(r, tail, acc ::: List(r2))
+        absorbSubsumed(r, epsilons, tail, acc ::: List(r2))
       }
 
   }
 
-  def absorbSubsumed(r: ClassifierRule, rules: List[ClassifierRule]): (ClassifierRule, List[ClassifierRule]) = absorbSubsumed(r, rules, List())
+  def absorbSubsumed(r: ClassifierRule, epsilons: Array[Double], rules: List[ClassifierRule]): (ClassifierRule, List[ClassifierRule]) = absorbSubsumed(r, epsilons, rules, List())
 
   /**
    * We browse a list of rules like [A, B, C, D, E, F]
@@ -76,19 +76,22 @@ object Subsumption extends JavaLogger {
    * @return
    */
   @tailrec
-  def compareRules(rulesAfter: List[ClassifierRule], rulesBefore: List[ClassifierRule]): List[ClassifierRule] = rulesAfter match {
+  def compareRules(epsilons: Array[Double], rulesAfter: List[ClassifierRule], rulesBefore: List[ClassifierRule]): List[ClassifierRule] = rulesAfter match {
     case Nil ⇒ rulesAfter ::: rulesBefore
     case r :: tail ⇒
       //System.out.println("working on rule " + r)
       //System.out.println("subsumption of the " + rulesBefore.length + " rules before")
-      val (r2, rulesBeforeUpdated) = absorbSubsumed(r, rulesBefore)
+      val (r2, rulesBeforeUpdated) = absorbSubsumed(r, epsilons, rulesBefore)
       //System.out.println("subsumption of the " + tail.length + " rules after")
-      val (r3, tailUpdated) = absorbSubsumed(r2, tail)
-      compareRules(tailUpdated, rulesBeforeUpdated ::: List(r3))
+      val (r3, tailUpdated) = absorbSubsumed(r2, epsilons, tail)
+      compareRules(epsilons, tailUpdated, rulesBeforeUpdated ::: List(r3))
   }
-  def compareRules(rules: List[ClassifierRule]): List[ClassifierRule] = compareRules(rules, List())
+  def compareRules(epsilons: Array[Double], rules: List[ClassifierRule]): List[ClassifierRule] = compareRules(epsilons, rules, List())
 
-  def apply()(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+  def apply(
+    microMinimize: Seq[Val[Double]],
+    microMaximize: Seq[Val[Double]]
+  )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Subsumption") { (context, rng, _) ⇒
 
@@ -102,7 +105,24 @@ object Subsumption extends JavaLogger {
 
       System.out.println("Applying subsumption on " + rulesWithoutDoubles.length + " unique rules")
 
-      val rulesUpdated = compareRules(rulesWithoutDoubles.toList)
+      val minPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
+        i ⇒ rulesWithoutDoubles.map(
+          r ⇒ r.performance(i).min
+        ).min).toArray
+      val maxPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
+        i ⇒ rulesWithoutDoubles.map(
+          r ⇒ r.performance(i).max
+        ).max).toArray
+
+      val epsilons = (minPerIndicator zip maxPerIndicator).map { case (min, max) ⇒ (max - min) / 100.0 }
+
+      System.out.println("Using epsilons on performance to define whether two rules can be merged or not:\n" +
+        (microMinimize ++ microMaximize).zipWithIndex
+        .map { case (indic, i) ⇒ indic.simpleName + " [" + minPerIndicator(i) + ":" + maxPerIndicator(i) + "] => " + epsilons(i) }
+        .mkString(",\n")
+      )
+
+      val rulesUpdated = compareRules(epsilons, rulesWithoutDoubles.toList)
 
       System.out.println("Rules after subsumption:\n" + ClassifierRule.toPrettyString(rulesUpdated))
 
@@ -122,7 +142,9 @@ object Subsumption extends JavaLogger {
       outputs += varRules,
 
       (inputs, outputs) += varIterations,
-      (inputs, outputs) += DecodeEntities.varEntities
+      (inputs, outputs) += DecodeEntities.varEntities,
+      (inputs, outputs) += DecodeEntities.varMin,
+      (inputs, outputs) += DecodeEntities.varMax
     )
 
   }

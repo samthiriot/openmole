@@ -40,6 +40,9 @@ object DecodeEntities {
   // the value which will contain the list of the entities in the model
   val varEntities = Val[Array[Entity]]("entities", namespace = namespaceMicroLCS)
 
+  val varMin = Val[Array[Double]]("characteristic_min", namespace = namespaceMicroLCS)
+  val varMax = Val[Array[Double]]("characteristic_max", namespace = namespaceMicroLCS)
+
   def toIndividuals(context: Context, characteristics: Seq[Val[Array[_]]], actions: Seq[Val[_]], acc: Seq[Entity]) = {
 
     val truc: Val[_] = null
@@ -80,11 +83,31 @@ object DecodeEntities {
           )
       )
 
+      val min: Array[Double] = _characteristicsValues.map {
+        case dd: Array[Double] ⇒ dd.min
+        case ii: Array[Int]    ⇒ ii.min.toDouble
+        case _                 ⇒ Double.NaN
+      }.toArray
+
+      val max: Array[Double] = _characteristicsValues.map {
+        case dd: Array[Double] ⇒ dd.max
+        case ii: Array[Int]    ⇒ ii.max.toDouble
+        case _                 ⇒ Double.NaN
+      }.toArray
+
       // cast the variables and return them as Arrays for each variable
       List(
+        // here are the entities we just decoded
         Variable(DecodeEntities.varEntities, entities),
+
+        // at the beginning there is no rule
         Variable(varRules, Array[ClassifierRule]()),
-        Variable(varIterations, 1)
+
+        // at the beginning it is the first iteration
+        Variable(varIterations, 1),
+
+        Variable(varMin, min),
+        Variable(varMax, max)
       )
 
     } set (
@@ -100,7 +123,9 @@ object DecodeEntities {
         // ... the rules (will be empty out of here !)
         varRules,
         // ... the count of iteration
-        varIterations
+        varIterations,
+        // ... the min and max values for each characteristic
+        varMin, varMax
       )
     )
 

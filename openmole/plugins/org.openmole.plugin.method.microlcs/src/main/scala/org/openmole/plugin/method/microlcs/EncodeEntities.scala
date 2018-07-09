@@ -99,7 +99,10 @@ object EncodeEntities {
       // we provide as outputs
       // ... the entities as arrays
       outputs ++= _characteristics,
-      outputs ++= _actions.map(g ⇒ g.prototype.toArray).toSeq
+      outputs ++= _actions.map(g ⇒ g.prototype.toArray).toSeq,
+
+      (inputs, outputs) += DecodeEntities.varMin,
+      (inputs, outputs) += DecodeEntities.varMax
 
     //outputs += varRules,
     //outputs += varIterations

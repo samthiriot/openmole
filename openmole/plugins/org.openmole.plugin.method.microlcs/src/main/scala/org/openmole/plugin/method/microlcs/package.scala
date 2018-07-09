@@ -164,11 +164,11 @@ package object microlcs {
 
     // TODO String
 
-    def mutateInt(c: Condition[Int], rng: scala.util.Random): Condition[Int] = {
+    def mutateInt(c: Condition[Int], min: Int, max: Int, rng: scala.util.Random): Condition[Int] = {
 
       val refVal = c match {
         case ov: ConditionOneValue[Int] ⇒ ov.refValue
-        case _                          ⇒ rng.nextInt(100) // TODO what is a good value ???
+        case _                          ⇒ min + rng.nextInt(max - min) // TODO what is a good value ???
       }
       val refName = c.attributeName
 
@@ -188,11 +188,11 @@ package object microlcs {
 
     }
 
-    def mutateDouble(c: Condition[Double], rng: scala.util.Random): Condition[Double] = {
+    def mutateDouble(c: Condition[Double], min: Double, max: Double, rng: scala.util.Random): Condition[Double] = {
 
       val refVal = c match {
         case ov: ConditionOneValue[Double] ⇒ ov.refValue
-        case _                             ⇒ rng.nextDouble() * 100 // TODO what is a good value ???
+        case _                             ⇒ rng.nextDouble() * (max - min) + min
       }
       val refName = c.attributeName
 
@@ -224,9 +224,9 @@ package object microlcs {
         }
     }
 
-    def mutate[T: ClassTag](c: Condition[T])(implicit rng: RandomProvider): Condition[T] = c match {
-      case LowerThanIntCondition(_, _) | GreaterThanIntCondition(_, _) | EqualToIntCondition(_, _) | WildCardIntCondition(_) ⇒ mutateInt(c.asInstanceOf[Condition[Int]], rng())
-      case LowerThanFloatCondition(_, _) | GreaterThanFloatCondition(_, _) | EqualToFloatCondition(_, _) | WildCardFloatCondition(_) ⇒ mutateDouble(c.asInstanceOf[Condition[Double]], rng())
+    def mutate[T: ClassTag](c: Condition[T], min: Double, max: Double)(implicit rng: RandomProvider): Condition[T] = c match {
+      case LowerThanIntCondition(_, _) | GreaterThanIntCondition(_, _) | EqualToIntCondition(_, _) | WildCardIntCondition(_) ⇒ mutateInt(c.asInstanceOf[Condition[Int]], min.toInt, max.toInt, rng())
+      case LowerThanFloatCondition(_, _) | GreaterThanFloatCondition(_, _) | EqualToFloatCondition(_, _) | WildCardFloatCondition(_) ⇒ mutateDouble(c.asInstanceOf[Condition[Double]], min, max, rng())
       case EqualToBoolCondition(_, _) | WildCardBoolCondition(_) ⇒ mutateBoolean(c.asInstanceOf[Condition[Boolean]], rng())
       case _ ⇒ throw new IllegalArgumentException("oops, we are not able to mutate gene " + c)
     }
@@ -265,7 +265,7 @@ package object microlcs {
     def subsums(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.subsumsUnsafe(other.conditions(i)) }
 
     def sameActions(other: AbstractClassifier) = actions.zipWithIndex.forall { case (a, i) ⇒ a.value == other.actions(i).value }
-    def similarPerformance(other: AbstractClassifier, epsilon: Double) = (performanceAggregated() zip other.performanceAggregated()).forall { case (p1, p2) ⇒ Math.abs(p1 - p2) < epsilon }
+    def similarPerformance(other: AbstractClassifier, epsilons: Array[Double]) = (performanceAggregated() zip other.performanceAggregated() zip epsilons).forall { case ((p1, p2), epsilon) ⇒ Math.abs(p1 - p2) < epsilon }
 
     def sameConditions(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.equals(other.conditions(i)) }
 
@@ -368,7 +368,7 @@ package object microlcs {
       )
     }
 
-    def mutate(r: ClassifierRule, microActions: Seq[Genes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    def mutate(r: ClassifierRule, microActions: Seq[Genes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
       val rand = rng()
       if (rand.nextDouble() <= r.conditions.length.toDouble / (r.conditions.length + r.actions.length)) {
         // change conditions
@@ -376,7 +376,7 @@ package object microlcs {
         r.copy(
           name = getNextName(),
           conditions = r.conditions.slice(0, idxChange - 1) ++
-            Array(Condition.mutate(r.conditions(idxChange))) ++
+            Array(Condition.mutate(r.conditions(idxChange), mins(idxChange), maxs(idxChange))) ++
             r.conditions.slice(idxChange + 1, r.conditions.length),
           performance = Seq()
         )
@@ -447,9 +447,9 @@ package object microlcs {
     val evaluate = Evaluate(microMinimize, microMaximize)
     val sEvaluate = Slot(evaluate)
 
-    val subsume = Subsumption()
+    val subsume = Subsumption(microMinimize, microMaximize)
 
-    val evolve = Evolve(microActions, 100)
+    val evolve = Evolve(microActions, microCharacteristics, 100)
     val sEvolve = Slot(evolve)
 
     val delete = Delete(100)
