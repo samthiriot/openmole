@@ -34,6 +34,8 @@ import org.openmole.core.workflow.transition.Slot
 import org.openmole.tool.random.RandomProvider
 import org.openmole.core.workspace.NewFile
 import org.openmole.core.fileservice.FileService
+import scala.reflect.runtime.universe._
+import org.openmole.core.expansion.{ Condition, FromContext }
 
 import Numeric.Implicits._
 import Ordering.Implicits._
@@ -46,6 +48,8 @@ package object microlcs {
   // this value will contain the set of rules
   val varRules = Val[Array[ClassifierRule]]("rules", namespace = namespaceMicroLCS)
 
+  val varIterations = Val[Int]("iterations", namespace = namespaceMicroLCS)
+
   implicit def scope = DefinitionScope.Internal
 
   trait Condition[T] {
@@ -56,7 +60,11 @@ package object microlcs {
       case vcasted: Variable[T] ⇒ accepts(vcasted)
       case _                    ⇒ throw new IllegalArgumentException("expecting another type for " + this)
     }
-
+    def subsums(other: Condition[T]): Boolean
+    def subsumsUnsafe(other: Condition[_]): Boolean = other match {
+      case otherCasted: Condition[T] ⇒ subsums(otherCasted)
+      case _                         ⇒ throw new IllegalArgumentException("Can only compare similar conditions")
+    }
   }
 
   abstract class ConditionOneValue[T] extends Condition[T] {
@@ -65,22 +73,45 @@ package object microlcs {
 
   abstract class WildCard[T] extends Condition[T] {
     override def matches(v: T): Boolean = true
-    override def toString(): String = { attributeName + "=#" }
+    override def toString(): String = { attributeName + "==#" }
+    override def subsums(other: Condition[T]) = true
   }
 
   abstract class LowerThanNumCondition[T: Numeric] extends ConditionOneValue[T] {
     override def matches(v: T): Boolean = { v <= refValue }
     override def toString(): String = { attributeName + "<=" + refValue }
+    override def subsums(other: Condition[T]) = other match {
+      case lt: LowerThanNumCondition[T]  ⇒ refValue >= lt.refValue
+      case _: GreaterThanNumCondition[T] ⇒ false
+      case _: EqualToCondition[T]        ⇒ false
+      case _: WildCard[T]                ⇒ false
+      case _                             ⇒ false // TODO warn ???
+    }
+
   }
 
   abstract class GreaterThanNumCondition[T: Numeric] extends ConditionOneValue[T] {
     override def matches(v: T): Boolean = { v >= refValue }
     override def toString(): String = { attributeName + ">=" + refValue }
+    override def subsums(other: Condition[T]) = other match {
+      case lt: GreaterThanNumCondition[T] ⇒ refValue <= lt.refValue
+      case _: LowerThanNumCondition[T]    ⇒ false
+      case _: EqualToCondition[T]         ⇒ false
+      case _: WildCard[T]                 ⇒ false
+      case _                              ⇒ false // TODO warn ???
+    }
   }
 
   abstract class EqualToCondition[T] extends ConditionOneValue[T] {
     override def matches(v: T): Boolean = (v == refValue)
-    override def toString(): String = { attributeName + "=" + refValue }
+    override def toString(): String = { attributeName + "==" + refValue }
+    override def subsums(other: Condition[T]) = other match {
+      case _: GreaterThanNumCondition[T] ⇒ false
+      case _: LowerThanNumCondition[T]   ⇒ false
+      case eq: EqualToCondition[T]       ⇒ refValue == eq.refValue
+      case _: WildCard[T]                ⇒ false
+      case _                             ⇒ false // TODO warn ???
+    }
   }
 
   case class WildCardIntCondition(attributeName: String) extends WildCard[Int]
@@ -131,23 +162,114 @@ package object microlcs {
       else { WildCardBoolCondition(v.prototype.simpleName) }
     }
 
-  }
+    // TODO String
 
-  /*
-  trait Action[T] {
-    def prototype: Val[T]
-    def value: T
-    override def toString: String = attributeName + "=" + value
-  }
+    def mutateInt(c: Condition[Int], rng: scala.util.Random): Condition[Int] = {
 
-  case class ActionValue[T](prototype: Val[T], value: T) extends Action[T]
-  */
+      val refVal = c match {
+        case ov: ConditionOneValue[Int] ⇒ ov.refValue
+        case _                          ⇒ rng.nextInt(100) // TODO what is a good value ???
+      }
+      val refName = c.attributeName
+
+      val r: Int = rng.nextInt(100)
+      if (r <= 25) {
+        LowerThanIntCondition(refName, refVal)
+      }
+      else if (r <= 50) {
+        GreaterThanIntCondition(refName, refVal)
+      }
+      else if (r <= 60) {
+        EqualToIntCondition(refName, refVal)
+      }
+      else {
+        WildCardIntCondition(refName)
+      }
+
+    }
+
+    def mutateDouble(c: Condition[Double], rng: scala.util.Random): Condition[Double] = {
+
+      val refVal = c match {
+        case ov: ConditionOneValue[Double] ⇒ ov.refValue
+        case _                             ⇒ rng.nextDouble() * 100 // TODO what is a good value ???
+      }
+      val refName = c.attributeName
+
+      val r: Int = rng.nextInt(100)
+      if (r <= 25) {
+        LowerThanFloatCondition(refName, refVal)
+      }
+      else if (r <= 50) {
+        GreaterThanFloatCondition(refName, refVal)
+      }
+      else if (r <= 60) {
+        EqualToFloatCondition(refName, refVal)
+      }
+      else {
+        WildCardFloatCondition(refName)
+      }
+
+    }
+
+    def mutateBoolean(c: Condition[Boolean], rng: scala.util.Random): Condition[Boolean] = c match {
+
+      case w: WildCardBoolCondition ⇒ EqualToBoolCondition(c.attributeName, rng.nextBoolean())
+      case eq: EqualToBoolCondition ⇒
+        if (rng.nextBoolean()) {
+          EqualToBoolCondition(c.attributeName, !eq.refValue)
+        }
+        else {
+          WildCardBoolCondition(c.attributeName)
+        }
+    }
+
+    def mutate[T: ClassTag](c: Condition[T])(implicit rng: RandomProvider): Condition[T] = c match {
+      case LowerThanIntCondition(_, _) | GreaterThanIntCondition(_, _) | EqualToIntCondition(_, _) | WildCardIntCondition(_) ⇒ mutateInt(c.asInstanceOf[Condition[Int]], rng())
+      case LowerThanFloatCondition(_, _) | GreaterThanFloatCondition(_, _) | EqualToFloatCondition(_, _) | WildCardFloatCondition(_) ⇒ mutateDouble(c.asInstanceOf[Condition[Double]], rng())
+      case EqualToBoolCondition(_, _) | WildCardBoolCondition(_) ⇒ mutateBoolean(c.asInstanceOf[Condition[Boolean]], rng())
+      case _ ⇒ throw new IllegalArgumentException("oops, we are not able to mutate gene " + c)
+    }
+
+  }
 
   abstract class AbstractClassifier {
-    def age: Int
-    def conditions: Array[Condition[_]]
-    def actions: Array[Variable[Q] forSome { type Q }]
-    override def toString: String = "if " + conditions.toList + " then " + actions.toList + "(" + age + ")"
+
+    val name: String
+    val age: Int
+
+    val conditions: Array[Condition[_]]
+    val actions: Array[Variable[Q] forSome { type Q }]
+
+    var performance: Seq[Seq[Double]]
+    var history: List[String] = List()
+
+    def applications(): Int = {
+      if (performance.isEmpty) { 0 }
+      else { performance(0).length }
+    }
+
+    override def toString: String =
+      name + ": \t" +
+        "if " + conditions.map(c ⇒ c.toString).mkString(" and ") +
+        " \tthen set " + actions.map(a ⇒ a.toString).mkString(", ") +
+        " \t " + (if (performance.isEmpty) "(0)" else "(" + performance(0).length + ") [" + performanceAggregated().map(v ⇒ v.toString).mkString(",") + "]")
+
+    def dominatesPareto(other: AbstractClassifier) = {
+      val perfMine = performanceAggregated()
+      val perfOther = other.performanceAggregated()
+      val zipped = perfMine zip perfOther
+      zipped.forall { case (m, o) ⇒ m <= o } && zipped.exists { case (m, o) ⇒ m < o }
+    }
+
+    def subsums(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.subsumsUnsafe(other.conditions(i)) }
+
+    def sameActions(other: AbstractClassifier) = actions.zipWithIndex.forall { case (a, i) ⇒ a.value == other.actions(i).value }
+    def similarPerformance(other: AbstractClassifier, epsilon: Double) = (performanceAggregated() zip other.performanceAggregated()).forall { case (p1, p2) ⇒ Math.abs(p1 - p2) < epsilon }
+
+    def sameConditions(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.equals(other.conditions(i)) }
+
+    def performanceAggregated() = performance.map(vals ⇒ vals.sum / vals.length)
 
     /**
      * Returns true if the conditions of the classifier are verified by the entity passed as a parameter
@@ -160,29 +282,124 @@ package object microlcs {
      */
     def actUpon(entity: Entity): Entity = entity.copy(actions = actions.map(av ⇒ av).toArray) // TODO clone ???
 
+    def absorb(other: ClassifierRule) = {
+
+      // update history
+      //history = history ::: List("absorbed " + other)
+
+      // integrate the performance of the other
+      performance = performance.zipWithIndex.map { case (p, i) ⇒ p ++ other.performance(i) }
+
+    }
+
+    def addPerformance(exp: Seq[Double]) = {
+      if (performance.isEmpty) {
+        // we had no perf; let's create it
+        performance = exp.map(v ⇒ List(v))
+      }
+      else {
+        // we have perf: let's just update it
+        performance = performance.zipWithIndex
+          .map { case (l, i) ⇒ l :+ exp(i) }
+      }
+    }
+
   }
 
   case class ClassifierRule(
-    conditions: Array[Condition[_]],
-    actions:    Array[Variable[Q] forSome { type Q }],
-    age:        Int
+    name:            String,
+    conditions:      Array[Condition[_]],
+    actions:         Array[Variable[Q] forSome { type Q }],
+    age:             Int,
+    var performance: Seq[Seq[Double]]
   ) extends AbstractClassifier
 
   object ClassifierRule {
 
+    var lastId: Int = 0
+
+    def getNextName(): String = {
+      ClassifierRule.lastId = ClassifierRule.lastId + 1
+      Integer.toString(ClassifierRule.lastId, 36).toUpperCase
+    }
+
     /**
      * Generates a random rule matching this entity
      */
-    def apply(e: Entity, _actions: Seq[Genes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    def apply(
+      e:        Entity,
+      _actions: Seq[Genes.Gene[_]],
+      context:  Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
 
       ClassifierRule(
+        // generate an alphanumeric string
+        getNextName(),
         // generate random conditions matching entity characteristics
         e.characteristics.map(c ⇒ Condition(c, rng())).toArray,
         // micro actions are random
         _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context))).toArray, // TODO
-        0
+        0,
+        Seq()
       )
     }
+
+    def toPrettyString(rules: List[ClassifierRule]) = rules.map(r ⇒ r.toString).mkString("\n")
+
+    def crossoverSinglePoint(a: ClassifierRule, b: ClassifierRule)(implicit rng: RandomProvider): (ClassifierRule, ClassifierRule) = {
+
+      val rand = rng()
+
+      val cutoffCondition: Int = rand.nextInt(a.conditions.length)
+      val cutoffActions: Int = rand.nextInt(a.actions.length)
+
+      (
+        a.copy(
+          name = getNextName(),
+          conditions = a.conditions.slice(0, cutoffCondition) ++ b.conditions.slice(cutoffCondition, b.conditions.length),
+          actions = a.actions.slice(0, cutoffActions) ++ b.actions.slice(cutoffActions, b.conditions.length),
+          performance = Seq()
+        ),
+          b.copy(
+            name = getNextName(),
+            conditions = b.conditions.slice(0, cutoffCondition) ++ a.conditions.slice(cutoffCondition, b.conditions.length),
+            actions = b.actions.slice(0, cutoffActions) ++ a.actions.slice(cutoffActions, b.conditions.length),
+            performance = Seq()
+          )
+      )
+    }
+
+    def mutate(r: ClassifierRule, microActions: Seq[Genes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+      val rand = rng()
+      if (rand.nextDouble() <= r.conditions.length.toDouble / (r.conditions.length + r.actions.length)) {
+        // change conditions
+        val idxChange = rand.nextInt(r.conditions.length)
+        r.copy(
+          name = getNextName(),
+          conditions = r.conditions.slice(0, idxChange - 1) ++
+            Array(Condition.mutate(r.conditions(idxChange))) ++
+            r.conditions.slice(idxChange + 1, r.conditions.length),
+          performance = Seq()
+        )
+      }
+      else {
+        // change actions
+        val idxChange = rand.nextInt(r.actions.length)
+        r.copy(
+          name = getNextName(),
+          actions =
+            r.actions.slice(0, idxChange - 1) ++
+              Array(
+                Variable.unsecure(
+                  microActions(idxChange).prototype,
+                  microActions(idxChange).makeRandomValue(context)
+                )) ++
+                r.actions.slice(idxChange + 1, r.conditions.length),
+          performance = Seq()
+        )
+      }
+
+    }
+
   }
 
   case class EntityAttributeValue[T](
@@ -208,7 +425,9 @@ package object microlcs {
     microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
     microActions:         Seq[Genes.Gene[_]],
     iterations:           Int,
-    evaluation:           Puzzle
+    evaluation:           Puzzle,
+    microMinimize:        Seq[Val[Double]],
+    microMaximize:        Seq[Val[Double]]
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
     //
@@ -216,12 +435,41 @@ package object microlcs {
 
     // the first step is to decode the initial lists of characteristics as lists of individuals.
     val decodeIndividuals = DecodeEntities(microCharacteristics, microActions)
+    val sDecodeIndividuals = Slot(decodeIndividuals)
 
     val doMatching = Matching(microActions)
+    val cDoMatching = Capsule(doMatching)
+    val sDoMatching = Slot(cDoMatching)
 
     val encodeIndividuals = EncodeEntities(microCharacteristics, microActions)
+    val sEncodeIndividuals = Slot(encodeIndividuals)
 
-    decodeIndividuals -- doMatching -- encodeIndividuals -- evaluation
+    val evaluate = Evaluate(microMinimize, microMaximize)
+    val sEvaluate = Slot(evaluate)
+
+    val subsume = Subsumption()
+
+    val evolve = Evolve(microActions, 100)
+    val sEvolve = Slot(evolve)
+
+    val delete = Delete(100)
+    val cDelete = Capsule(delete)
+    val sDelete = Slot(cDelete)
+
+    val sDoMatchingLoop = Slot(cDoMatching)
+
+    (
+      (sDecodeIndividuals -- sDoMatching -- sEncodeIndividuals -- evaluation -- sEvaluate -- subsume -- sEvolve -- sDelete) &
+
+      // convey rules, iteration, micro entities and other information over the evaluation
+      (sEncodeIndividuals -- sEvaluate) &
+
+      // loop
+      (sDelete -- (sDoMatchingLoop when "microlcs$iterations < " + iterations))
+
+    )
+    //(sDecodeIndividuals -- sDoMatchingLoop)
+
   }
 
 }

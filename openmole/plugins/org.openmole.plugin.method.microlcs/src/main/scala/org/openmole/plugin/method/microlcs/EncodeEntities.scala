@@ -48,11 +48,10 @@ object EncodeEntities {
 
       // extract inputs from context
       val entities: Array[Entity] = context(DecodeEntities.varEntities)
-      val rules: Array[ClassifierRule] = context(varRules)
 
       System.out.println("encoding " + entities.length + " entities into " + (_characteristics.length + _actions.length) + " arrays...")
 
-      _characteristics.zipWithIndex.foreach { case (c, i) ⇒ System.out.println(c + " => " + entities.map(e ⇒ e.characteristics(i).value).toList.toArray) }
+      //_characteristics.zipWithIndex.foreach { case (c, i) ⇒ System.out.println(c + " => " + entities.map(e ⇒ e.characteristics(i).value).toList.toArray) }
 
       // forge as many outputs as expected
       val outputsForCharacteristics: List[Variable[_]] =
@@ -85,19 +84,26 @@ object EncodeEntities {
           .toList
 
       // cast the variables and return them as Arrays for each variable
-      List(
-        Variable(varRules, rules)
-      ) ++ outputsForCharacteristics ++ outputsForActions
+      outputsForCharacteristics ++ outputsForActions
 
     } set (
       // we expect as inputs:
-      inputs += (
-        DecodeEntities.varEntities,
-        varRules),
-        // we provide as outputs
-        outputs ++= _characteristics,
-        outputs ++= _actions.map(g ⇒ g.prototype.toArray).toSeq,
-        outputs += varRules
+      // .. the list of entities
+      (inputs, outputs) += DecodeEntities.varEntities,
+      // ... the rules (well, just to forward them)
+
+      (inputs, outputs) += varRules,
+      // ... the current iterations
+      (inputs, outputs) += varIterations,
+
+      // we provide as outputs
+      // ... the entities as arrays
+      outputs ++= _characteristics,
+      outputs ++= _actions.map(g ⇒ g.prototype.toArray).toSeq
+
+    //outputs += varRules,
+    //outputs += varIterations
+
     )
 
   }

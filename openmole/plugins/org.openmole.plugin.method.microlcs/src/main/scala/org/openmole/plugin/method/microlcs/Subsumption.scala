@@ -1,0 +1,129 @@
+/*
+ * Copyright (C) 2018 Samuel Thiriot
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.openmole.plugin.method.microlcs
+
+import org.openmole.core.context.{ Context, Namespace, Val, Variable }
+import org.openmole.core.expansion.FromContext
+import org.openmole.core.workflow.builder.DefinitionScope
+import org.openmole.core.workflow.sampling.Sampling
+import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
+import org.openmole.tool.logger.JavaLogger
+import org.openmole.core.workflow.task.ClosureTask
+import org.openmole.core.workflow.dsl._
+import org.openmole.core.fileservice.FileService
+import org.openmole.core.workspace.NewFile
+import org.openmole.tool.random.RandomProvider
+
+import scala.annotation.tailrec
+
+/**
+ * Takes a set of rules, and merges them when possible.
+ */
+object Subsumption extends JavaLogger {
+
+  @tailrec
+  def absorbSubsumed(r: ClassifierRule, rules: List[ClassifierRule], acc: List[ClassifierRule]): (ClassifierRule, List[ClassifierRule]) = rules match {
+    case Nil ⇒
+      //System.out.println("finished processing " + r + " and returning " + acc.length + " rules")
+      (r, acc)
+    case r2 :: tail ⇒
+      //System.out.println("comparing rules(" + tail.length + " remaining):\n\t" + r + "\n\t" + r2)
+
+      if (r eq r2) {
+        //System.out.println("its the same !")
+        absorbSubsumed(r, tail, acc)
+      }
+      else if ((r.sameActions(r2)) && (r.sameConditions(r2) || (r.subsums(r2) && r.similarPerformance(r2, 10.0)))) {
+        //System.out.println("comparing rules(" + tail.length + " remaining):\n\t" + r + "\n\t" + r2)
+        //System.out.println("=> subsuming or the same")
+        // absorb r2 into r
+        //System.out.println("absorb r2 into 2...")
+        r.absorb(r2)
+        // continue, but do not consider the absorbed rule anymore
+        //System.out.println("continuing recursively to process the " + tail.length + " remaining elements (" + acc.length + " accumulated)")
+        absorbSubsumed(r, tail, acc)
+
+      }
+      else {
+        //System.out.println("continuing")
+        absorbSubsumed(r, tail, acc ::: List(r2))
+      }
+
+  }
+
+  def absorbSubsumed(r: ClassifierRule, rules: List[ClassifierRule]): (ClassifierRule, List[ClassifierRule]) = absorbSubsumed(r, rules, List())
+
+  /**
+   * We browse a list of rules like [A, B, C, D, E, F]
+   * At a step we study [A, B, C] [D, E, F]; we study how D is able to absorb rules before or rules after
+   * @param rulesAfter
+   * @param rulesBefore
+   * @return
+   */
+  @tailrec
+  def compareRules(rulesAfter: List[ClassifierRule], rulesBefore: List[ClassifierRule]): List[ClassifierRule] = rulesAfter match {
+    case Nil ⇒ rulesAfter ::: rulesBefore
+    case r :: tail ⇒
+      //System.out.println("working on rule " + r)
+      //System.out.println("subsumption of the " + rulesBefore.length + " rules before")
+      val (r2, rulesBeforeUpdated) = absorbSubsumed(r, rulesBefore)
+      //System.out.println("subsumption of the " + tail.length + " rules after")
+      val (r3, tailUpdated) = absorbSubsumed(r2, tail)
+      compareRules(tailUpdated, rulesBeforeUpdated ::: List(r3))
+  }
+  def compareRules(rules: List[ClassifierRule]): List[ClassifierRule] = compareRules(rules, List())
+
+  def apply()(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+
+    ClosureTask("Subsumption") { (context, rng, _) ⇒
+
+      // retrieve the inputs
+      // ... the rules used for the exploration
+      val rules: Array[ClassifierRule] = context(varRules)
+
+      System.out.println("Applying subsumption on " + rules.length + " rules")
+
+      val rulesWithoutDoubles = rules.toSet.toArray
+
+      System.out.println("Applying subsumption on " + rulesWithoutDoubles.length + " unique rules")
+
+      val rulesUpdated = compareRules(rulesWithoutDoubles.toList)
+
+      System.out.println("Rules after subsumption:\n" + ClassifierRule.toPrettyString(rulesUpdated))
+
+      System.out.println("Subsumption reduced rules from " + rulesWithoutDoubles.length + " to " + rulesUpdated.length + " rules")
+
+      List(
+        Variable(varRules, rulesUpdated.toArray)
+      )
+
+    } set (
+      // we expect as inputs:
+      // ... the rules we used last time
+      inputs += varRules,
+
+      // we provide as outputs
+      // ... the rules we updates with the novel information
+      outputs += varRules,
+
+      (inputs, outputs) += varIterations,
+      (inputs, outputs) += DecodeEntities.varEntities
+    )
+
+  }
+}

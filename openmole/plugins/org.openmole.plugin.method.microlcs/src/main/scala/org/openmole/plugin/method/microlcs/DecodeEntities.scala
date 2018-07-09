@@ -83,7 +83,8 @@ object DecodeEntities {
       // cast the variables and return them as Arrays for each variable
       List(
         Variable(DecodeEntities.varEntities, entities),
-        Variable(varRules, Array[ClassifierRule]())
+        Variable(varRules, Array[ClassifierRule]()),
+        Variable(varIterations, 1)
       )
 
     } set (
@@ -97,7 +98,9 @@ object DecodeEntities {
         // ... the entities we decoded
         DecodeEntities.varEntities,
         // ... the rules (will be empty out of here !)
-        varRules
+        varRules,
+        // ... the count of iteration
+        varIterations
       )
     )
 

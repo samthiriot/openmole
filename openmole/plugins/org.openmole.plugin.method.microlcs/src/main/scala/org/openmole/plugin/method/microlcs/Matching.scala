@@ -39,15 +39,22 @@ object Matching extends JavaLogger {
    * For a given entities, identifies the rules which are applicable and
    * returns them.
    */
-  def matchOrCoverIndividual(rules: Array[ClassifierRule], entity: Entity, _actions: Seq[Genes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+  def matchOrCoverIndividual(
+    rules:    Array[ClassifierRule],
+    entity:   Entity,
+    _actions: Seq[Genes.Gene[_]],
+    context:  Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+
     val matched: Array[ClassifierRule] = rules.filter(r ⇒ r.matches(entity))
     if (matched.length == 1) {
-      matched(1) // TODO
+      matched(0) // TODO
     }
     else if (matched.length > 1) {
       // select the best one ? something else ?
-      System.out.println("TODO !!! We might use " + matched.length + " rules here !")
-      matched(1) // TODO
+      //System.out.println("we might match entity " + entity + " with " + matched.length + " rules")
+      //System.out.println(ClassifierRule.toPrettyString(matched.toList))
+      // TODO we select randomly here... what would be the good solution?
+      matched(rng().nextInt(matched.length))
     }
     else {
       System.out.println("covering entity " + entity)
@@ -55,20 +62,25 @@ object Matching extends JavaLogger {
     }
   }
 
-  def apply(_actions: Seq[Genes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+  def apply(
+    _actions: Seq[Genes.Gene[_]]
+  )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Matching") { (context, rng, _) ⇒
 
+      val iteration: Int = context(varIterations)
       val entities: Array[Entity] = context(DecodeEntities.varEntities)
       val rules: Array[ClassifierRule] = context(varRules)
 
-      System.out.println("matching on " + entities.length + " entities based on " + rules.length + " rules")
+      System.out.println(
+        "Iteration " + iteration +
+          " matching on " + entities.length + " entities based on " + rules.length + " rules")
 
       // create the set of actions to be used
       val rulesActionSet: Array[ClassifierRule] =
         entities.map { e ⇒ matchOrCoverIndividual(rules, e, _actions, context)(rng, newFile, fileService) }
           .toArray
-      System.out.println("Here are the rules: " + rulesActionSet.toList)
+      //System.out.println("Here are the rules: " + ClassifierRule.toPrettyString(rulesActionSet.toList))
 
       // apply the rules on entities
       val entitiesUpdated: Array[Entity] =
@@ -86,10 +98,15 @@ object Matching extends JavaLogger {
       inputs += DecodeEntities.varEntities,
       // ... the list of rules
       inputs += varRules,
+      // .. the current iteration
+      inputs += varIterations,
+
       // we provide as outputs
       outputs += DecodeEntities.varEntities,
       // ... the entities we decoded
-      outputs += varRules
+      outputs += varRules,
+      // ... the current iteration
+      outputs += varIterations
     )
 
   }
