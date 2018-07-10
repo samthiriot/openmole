@@ -93,6 +93,8 @@ object EncodeEntities {
       // ... the rules (well, just to forward them)
 
       (inputs, outputs) += varRules,
+      (inputs, outputs) += varRulesApplied,
+
       // ... the current iterations
       (inputs, outputs) += varIterations,
 

@@ -49,6 +49,8 @@ package object microlcs {
 
   // this value will contain the set of rules
   val varRules = Val[Array[ClassifierRule]]("rules", namespace = namespaceMicroLCS)
+  // refers to a list of rules applied on a simultion, each rule corresponding one entity
+  val varRulesApplied = Val[Array[ClassifierRule]]("rules", namespace = namespaceMicroLCS)
 
   val varIterations = Val[Int]("iterations", namespace = namespaceMicroLCS)
 

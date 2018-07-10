@@ -36,8 +36,7 @@ object ExportRules extends JavaLogger {
 
   val varId = Val[Array[String]]("id", namespace = namespaceMicroLCS)
   val varCount = Val[Array[Int]]("count", namespace = namespaceMicroLCS)
-
-
+  val varIterationRule = Val[Array[Int]]("iteration", namespace = namespaceMicroLCS)
   /*
   def toTypedArray[T: ClassTag](l: List[T]): Array[_] = l match {
     case li: List[Int]     ⇒ li.toArray[Int]
@@ -57,6 +56,7 @@ object ExportRules extends JavaLogger {
 
     ClosureTask("ExportRules") { (context, rng, _) ⇒
 
+      val iteration: Int = context(varIterations)
       val rules: Array[ClassifierRule] = context(varRules)
 
       // remove the rules with no experience
@@ -65,33 +65,37 @@ object ExportRules extends JavaLogger {
       System.out.println("preparing " + rulesFiltered.length + " rules for exportation")
 
       List(
-        Variable(varId, rulesFiltered.map(r ⇒ r.name)),
-        Variable(varCount, rulesFiltered.map(r => r.applications()))
+        Variable(varId, rulesFiltered.map(r ⇒ r.name))
       ) ++ microCharacteristics.zipWithIndex.map {
           case (c, i) ⇒ Variable(
             Val[Array[String]](c.name, namespace = namespaceMicroLCS),
-            rulesFiltered.map(r ⇒ r.conditions(i).toString).toArray)
+            rulesFiltered.map(r ⇒ r.conditions(i).toString))
         } ++ microActions.zipWithIndex.map {
           case (a, i) ⇒ Variable.unsecure(
-            a.prototype.toArray, // Val[Array[Object]](a.prototype.simpleName, a.prototype.namespace),
+            a.prototype.toArray,
             EncodeEntities.toArrayTyped(rulesFiltered.toList.map(r ⇒ r.actions(i).value).toList))
         } ++ (microMinimize ++ microMaximize).zipWithIndex.map {
           case (t, i) ⇒ Variable(
             t.toArray,
             rulesFiltered.map(r ⇒ r.performanceAggregated(i))
           )
-        }
+        } ++ List(
+          Variable(varCount, rulesFiltered.map(r ⇒ r.applications())),
+          Variable(varIterationRule, rulesFiltered.map(_ ⇒ iteration))
+        )
 
     } set (
       // we expect as inputs:
       // ... the rules we used for each entity
       inputs += varRules,
+      inputs += varIterations,
 
       // we provide as outputs
       //outputs += DecodeEntities.varEntities,
       // ... the rules we updates with the novel information
       outputs += varId,
       outputs += varCount,
+      outputs += varIterationRule,
       outputs ++= microCharacteristics.map(c ⇒ Val[Array[String]](c.name, namespace = namespaceMicroLCS)),
       outputs ++= microActions.map(a ⇒ a.prototype.toArray),
       outputs ++= (microMinimize ++ microMaximize).map(t ⇒ t.toArray)

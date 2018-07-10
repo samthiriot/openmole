@@ -92,7 +92,7 @@ object Matching extends JavaLogger {
 
       List(
         Variable(DecodeEntities.varEntities, entitiesUpdated),
-        Variable(varRules, rulesActionSet)
+        Variable(varRulesApplied, rulesActionSet)
       )
 
     } set (
@@ -107,6 +107,7 @@ object Matching extends JavaLogger {
       // we provide as outputs
       outputs += DecodeEntities.varEntities,
       // ... the entities we decoded
+      outputs += varRulesApplied,
       outputs += varRules,
       // ... the current iteration
       outputs += varIterations,

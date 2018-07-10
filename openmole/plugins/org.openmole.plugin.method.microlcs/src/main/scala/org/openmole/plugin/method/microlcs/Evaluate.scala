@@ -47,7 +47,9 @@ object Evaluate extends JavaLogger {
       val iteration: Int = context(varIterations)
 
       // ... the rules used for the exploration
-      val rulesUsed: Array[ClassifierRule] = context(varRules)
+      val rulesUsed: Array[ClassifierRule] = context(varRulesApplied)
+      val rulesUnused: Array[ClassifierRule] = context(varRulesApplied)
+
       // ... the indicators for each entity
       val microIndicatorsToMinimize: Seq[Array[Double]] = microMinimize.map(v ⇒ context(v.toArray))
       val microIndicatorsToMaximize: Seq[Array[Double]] = microMaximize.map(v ⇒ context(v.toArray))
@@ -74,7 +76,7 @@ object Evaluate extends JavaLogger {
 
       // System.out.println("Rules after evaluation: " + ClassifierRule.toPrettyString(rulesUsed.toList))
       List(
-        Variable(varRules, rulesUsed),
+        Variable(varRules, (rulesUsed ++ rulesUnused).toSet.toArray),
         Variable(varIterations, iteration + 1)
       )
 
@@ -85,6 +87,7 @@ object Evaluate extends JavaLogger {
       inputs ++= microMaximize.map(v ⇒ v.toArray),
       // ... the rules we used for each entity
       inputs += varRules,
+      inputs += varRulesApplied,
 
       // we provide as outputs
       //outputs += DecodeEntities.varEntities,
