@@ -42,7 +42,7 @@ object EncodeEntities {
 
   def apply[T](
     _characteristics: Seq[Val[Array[Q]] forSome { type Q }],
-    _actions:         Seq[Genes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+    _actions:         Seq[MicroGenes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("EncodeIndividuals") { (context, rng, _) ⇒
 

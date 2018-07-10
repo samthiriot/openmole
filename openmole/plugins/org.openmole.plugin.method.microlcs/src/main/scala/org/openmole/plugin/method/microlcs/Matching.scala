@@ -32,7 +32,7 @@ import org.openmole.tool.random.RandomProvider
 
 object Matching extends JavaLogger {
 
-  def covering(entity: Entity, _actions: Seq[Genes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+  def covering(entity: Entity, _actions: Seq[MicroGenes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
     ClassifierRule(entity, _actions, context)
   }
 
@@ -43,7 +43,7 @@ object Matching extends JavaLogger {
   def matchOrCoverIndividual(
     rules:    Array[ClassifierRule],
     entity:   Entity,
-    _actions: Seq[Genes.Gene[_]],
+    _actions: Seq[MicroGenes.Gene[_]],
     context:  Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
 
     val matched: Array[ClassifierRule] = rules.filter(r ⇒ r.matches(entity))
@@ -64,7 +64,7 @@ object Matching extends JavaLogger {
   }
 
   def apply(
-    _actions: Seq[Genes.Gene[_]]
+    _actions: Seq[MicroGenes.Gene[_]]
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Matching") { (context, rng, _) ⇒

@@ -64,7 +64,7 @@ object Evolve extends JavaLogger {
     )
 
   def apply(
-    microActions:         Seq[Genes.Gene[_]],
+    microActions:         Seq[MicroGenes.Gene[_]],
     microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
     rulesCount:           Int
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {

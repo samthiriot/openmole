@@ -25,7 +25,7 @@ import org.openmole.core.workflow.sampling.Factor
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.random.RandomProvider
 
-object Genes {
+object MicroGenes {
 
   sealed trait Gene[T] {
 

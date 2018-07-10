@@ -49,7 +49,7 @@ object ExportRules extends JavaLogger {
 
   def apply(
     microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
-    microActions:         Seq[Genes.Gene[_]],
+    microActions:         Seq[MicroGenes.Gene[_]],
     microMinimize:        Seq[Val[Double]],
     microMaximize:        Seq[Val[Double]]
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {

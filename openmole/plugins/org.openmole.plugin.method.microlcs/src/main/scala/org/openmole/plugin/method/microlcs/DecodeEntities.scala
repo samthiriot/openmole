@@ -56,7 +56,7 @@ object DecodeEntities {
   //U] forSome { type U }
   def apply[T](
     _characteristics: Seq[Val[Array[T]] forSome { type T }],
-    _actions:         Seq[Genes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+    _actions:         Seq[MicroGenes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("DecodeIndividuals") { (context, rng, _) ⇒
 
@@ -104,7 +104,7 @@ object DecodeEntities {
         Variable(varRules, Array[ClassifierRule]()),
 
         // at the beginning it is the first iteration
-        Variable(varIterations, 1),
+        Variable(varIterations, 0),
 
         Variable(varMin, min),
         Variable(varMax, max)
