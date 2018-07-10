@@ -34,8 +34,10 @@ import org.openmole.core.workflow.transition.Slot
 import org.openmole.tool.random.RandomProvider
 import org.openmole.core.workspace.NewFile
 import org.openmole.core.fileservice.FileService
+
 import scala.reflect.runtime.universe._
 import org.openmole.core.expansion.{ Condition, FromContext }
+import org.openmole.plugin.method.microlcs.DecodeEntities.{ varMax, varMin }
 
 import Numeric.Implicits._
 import Ordering.Implicits._
@@ -271,6 +273,8 @@ package object microlcs {
 
     def performanceAggregated() = performance.map(vals ⇒ vals.sum / vals.length)
 
+    def performanceAggregated(i: Int) = performance(i).sum / performance(i).length
+
     /**
      * Returns true if the conditions of the classifier are verified by the entity passed as a parameter
      */
@@ -456,8 +460,49 @@ package object microlcs {
     val cDelete = Capsule(delete)
     val sDelete = Slot(cDelete)
 
-    val sDoMatchingLoop = Slot(cDoMatching)
+    //val sDoMatchingLoop = Slot(cDoMatching)
 
+    val dispatch = ExplorationTask(DispatchEntities(10))
+
+    val aggregate = AggregateResults()
+
+    val beginLoop = EmptyTask() set (
+      name := "beginLoop",
+      (inputs, outputs) += (DecodeEntities.varEntities, varRules, varIterations, DecodeEntities.varMin, DecodeEntities.varMax)
+    )
+
+    val beginLoopCapsule = Capsule(beginLoop, strain = true)
+    val beginLoopExecInit = Slot(beginLoopCapsule)
+    val beginLoopExecLoop = Slot(beginLoopCapsule)
+
+    val export = ExportRules(microCharacteristics, microActions, microMinimize, microMaximize)
+
+    (
+      (
+        (
+          sDecodeIndividuals --
+          beginLoopExecInit --
+          dispatch -< (
+            sDoMatching --
+            sEncodeIndividuals --
+            evaluation --
+            sEvaluate) >-
+            aggregate --
+            subsume --
+            sEvolve --
+            sDelete
+        ) &
+
+            // convey rules, iteration, micro entities and other information over the evaluation
+            (sEncodeIndividuals -- sEvaluate) &
+
+            // loop
+            (sDelete -- (beginLoopExecLoop when "microlcs$iterations < " + iterations))
+
+      ) -- export
+    )
+
+    /*
     (
       (sDecodeIndividuals -- sDoMatching -- sEncodeIndividuals -- evaluation -- sEvaluate -- subsume -- sEvolve -- sDelete) &
 
@@ -467,8 +512,7 @@ package object microlcs {
       // loop
       (sDelete -- (sDoMatchingLoop when "microlcs$iterations < " + iterations))
 
-    )
-    //(sDecodeIndividuals -- sDoMatchingLoop)
+    )*/
 
   }
 

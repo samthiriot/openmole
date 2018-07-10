@@ -124,7 +124,9 @@ object Subsumption extends JavaLogger {
 
       val rulesUpdated = compareRules(epsilons, rulesWithoutDoubles.toList)
 
-      System.out.println("Rules after subsumption:\n" + ClassifierRule.toPrettyString(rulesUpdated))
+      System.out.println("Rules after subsumption (capitalizing " +
+        rulesUpdated.map(r ⇒ r.performance(0).length).sum + " simulations):\n" +
+        ClassifierRule.toPrettyString(rulesUpdated))
 
       System.out.println("Subsumption reduced rules from " + rulesWithoutDoubles.length + " to " + rulesUpdated.length + " rules")
 

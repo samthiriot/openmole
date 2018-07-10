@@ -84,7 +84,7 @@ object Evolve extends JavaLogger {
       val maxs: Array[Double] = context(DecodeEntities.varMax)
 
       val rulesUpdated =
-        (1 to rules.length / 2).map(_ ⇒ tournamentSelectionWithN(4, rules)(rng))
+        (0 to ((rulesCount * 2) - rules.length) / 2).map(_ ⇒ tournamentSelectionWithN(4, rules)(rng))
           .map { case (a: ClassifierRule, b: ClassifierRule) ⇒ ClassifierRule.crossoverSinglePoint(a, b)(rng) }
           .flatMap {
             case (c: ClassifierRule, d: ClassifierRule) ⇒ List(
@@ -93,24 +93,8 @@ object Evolve extends JavaLogger {
           }
           .toArray
 
-      /*var x: Int = 0
-      for (x ← 1 to 20) {
-        System.out.println("iteration " + x)
-        val (a: ClassifierRule, b: ClassifierRule) = tournamentSelectionWithN(4, rules)(rng)
-        System.out.println("Selected:\n\t" + a + "\n\t" + b)
-
-        val (c: ClassifierRule, d: ClassifierRule) = ClassifierRule.crossoverSinglePoint(a, b)(rng)
-        System.out.println("After crossover:\n\t" + c + "\n\t" + d)
-
-        val e = ClassifierRule.mutate(c, microActions, context)(rng, newFile, fileService)
-        val f = ClassifierRule.mutate(d, microActions, context)(rng, newFile, fileService)
-
-        System.out.println("After mutation:\n\t" + e + "\n\t" + f)
-
-      }
-    */
-
-      System.out.println("Rules after evolution:\n" + ClassifierRule.toPrettyString(rulesUpdated.toList))
+      System.out.println("Generated " + rulesUpdated.length + " novel rules => we now have " + (rulesUpdated.length + rules.length))
+      //System.out.println(ClassifierRule.toPrettyString(rulesUpdated.toList))
       List(
         Variable(varRules, rules ++ rulesUpdated)
       )

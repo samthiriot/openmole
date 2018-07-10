@@ -37,7 +37,8 @@ object Evaluate extends JavaLogger {
 
   def apply(
     microMinimize: Seq[Val[Double]],
-    microMaximize: Seq[Val[Double]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+    microMaximize: Seq[Val[Double]]
+  )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Evaluate") { (context, rng, _) ⇒
 
