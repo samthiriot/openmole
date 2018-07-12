@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Val, Variable }
+import org.openmole.core.context.Variable
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
@@ -28,11 +28,11 @@ import org.openmole.tool.logger.JavaLogger
 /**
  * ensures we only keep a given maximum of rules
  */
-object AggregateResults extends JavaLogger {
+object AggregateResultsPlan extends JavaLogger {
 
   def apply()(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
-    ClosureTask("AggregateResults") { (context, rng, _) ⇒
+    ClosureTask("AggregateResultsPlan") { (context, rng, _) ⇒
 
       // retrieve the inputs
       // ... the current iteration
@@ -52,12 +52,15 @@ object AggregateResults extends JavaLogger {
       val minsFlatten: Array[Double] = mins.transpose.map(vv ⇒ vv.min)
       val maxsFlatten: Array[Double] = maxs.transpose.map(vv ⇒ vv.max)
 
+      val plansSimulated: Array[MacroGene] = context(varPlanSimulated.toArray)
+
       List(
         Variable(varIterations, iteration),
         Variable(varRules, rules.flatten),
         Variable(DecodeEntities.varEntities, entities(0)),
         Variable(DecodeEntities.varMin, minsFlatten),
-        Variable(DecodeEntities.varMax, maxsFlatten)
+        Variable(DecodeEntities.varMax, maxsFlatten),
+        Variable(varPlans, plansSimulated)
       )
 
     } set (
@@ -67,12 +70,14 @@ object AggregateResults extends JavaLogger {
       inputs += DecodeEntities.varEntities.toArray,
       inputs += DecodeEntities.varMin.toArray,
       inputs += DecodeEntities.varMax.toArray,
+      inputs += varPlanSimulated.toArray,
 
       outputs += varIterations,
       outputs += varRules,
       outputs += DecodeEntities.varEntities,
       outputs += DecodeEntities.varMin,
-      outputs += DecodeEntities.varMax
+      outputs += DecodeEntities.varMax,
+      outputs += varPlans
 
     )
 

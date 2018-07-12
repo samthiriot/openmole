@@ -1,6 +1,5 @@
 /*
  * Copyright (C) 2018 Samuel Thiriot
- *                    Romain Reuillon
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published by
@@ -23,7 +22,7 @@ import org.openmole.core.fileservice.FileService
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.random.RandomProvider
 
-abstract class AbstractClassifier {
+abstract class AbstractClassifier extends HasMultiObjectivePerformance {
 
   val name: String
   val age: Int
@@ -31,19 +30,11 @@ abstract class AbstractClassifier {
   val conditions: Array[Condition[_]]
   val actions: Array[Variable[Q] forSome { type Q }]
 
-  var performance: Seq[Seq[Double]]
-  var history: List[String] = List()
-
-  def applications(): Int = {
-    if (performance.isEmpty) { 0 }
-    else { performance(0).length }
-  }
-
   override def toString: String =
     name + ": \t" +
       "if " + conditions.map(c ⇒ c.toString).mkString(" and ") +
       " \tthen set " + actions.map(a ⇒ a.toString).mkString(", ") +
-      " \t " + (if (performance.isEmpty) "(0)" else "(" + performance(0).length + ") [" + performanceAggregated().map(v ⇒ v.toString).mkString(",") + "]")
+      " \t " + performanceToString
 
   def dominatesPareto(other: AbstractClassifier) = {
     val perfMine = performanceAggregated()
@@ -59,10 +50,6 @@ abstract class AbstractClassifier {
 
   def sameConditions(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.equals(other.conditions(i)) }
 
-  def performanceAggregated() = performance.map(vals ⇒ vals.sum / vals.length)
-
-  def performanceAggregated(i: Int) = performance(i).sum / performance(i).length
-
   /**
    * Returns true if the conditions of the classifier are verified by the entity passed as a parameter
    */
@@ -76,34 +63,35 @@ abstract class AbstractClassifier {
 
   def absorb(other: ClassifierRule) = {
 
-    // update history
-    //history = history ::: List("absorbed " + other)
-
     // integrate the performance of the other
     performance = performance.zipWithIndex.map { case (p, i) ⇒ p ++ other.performance(i) }
 
   }
 
-  def addPerformance(exp: Seq[Double]) = {
-    if (performance.isEmpty) {
-      // we had no perf; let's create it
-      performance = exp.map(v ⇒ List(v))
-    }
-    else {
-      // we have perf: let's just update it
-      performance = performance.zipWithIndex
-        .map { case (l, i) ⇒ l :+ exp(i) }
-    }
+  /**
+   * Returns an integer index of generality; the higher the more general.
+   *
+   */
+  def generalityIndice(): Int = conditions.map(_.generalityIndice).sum
+
+  def distanceAction(a1: Any, a2: Any): Double = (a1, a2) match {
+    case (i1: Integer, i2: Integer) ⇒ Math.abs(i2 - i1)
+    case (d1: Double, d2: Double)   ⇒ Math.abs(d2 - d1)
+    case (b1: Boolean, b2: Boolean) ⇒ if (b1 == b2) 0.0 else 1.0
+    case (s1: String, s2: String)   ⇒ if (s1 == s2) 0.0 else 1.0
+    case (o1: Any, o2: Any)         ⇒ if (o1.equals(o2)) 0.0 else 1.0
+    case _                          ⇒ throw new IllegalArgumentException("cannot compute the distance between two actions " + a1 + " and " + a2)
   }
 
+  def distanceActions(other: ClassifierRule): Double = (actions zip other.actions).map { case (a1, a2) ⇒ distanceAction(a1.value, a2.value) }.sum
 }
 
 case class ClassifierRule(
-  name:            String,
-  conditions:      Array[Condition[_]],
-  actions:         Array[Variable[Q] forSome { type Q }],
-  age:             Int,
-  var performance: Seq[Seq[Double]]
+  name:                     String,
+  conditions:               Array[Condition[_]],
+  actions:                  Array[Variable[Q] forSome { type Q }],
+  age:                      Int,
+  override var performance: Seq[Seq[Double]]
 ) extends AbstractClassifier
 
 object ClassifierRule {

@@ -91,8 +91,17 @@ object ExplorationTransition {
 
       for ((p, v) ← typedFactors zip value) {
         val fp = p.fromArray
+
+        // TODO remove this verrue
+        /*
+        v match {
+          case av: Array[_] ⇒ System.out.println("processing in -< the value " + p + " and " + av.mkString(","))
+          case _            ⇒ System.out.println("processing in -< the value " + p + " and " + v)
+        }
+        */
+
         if (fp.accepts(v)) variables += Variable(fp, v)
-        else throw new UserBadDataError("Found value of type " + v.asInstanceOf[AnyRef].getClass + " incompatible with prototype " + fp)
+        else throw new UserBadDataError("Found value " + v + " of type " + v.asInstanceOf[AnyRef].getClass + " incompatible with prototype " + fp)
       }
 
       import executionContext.services._

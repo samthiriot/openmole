@@ -49,9 +49,8 @@ object EncodeEntities {
       // extract inputs from context
       val entities: Array[Entity] = context(DecodeEntities.varEntities)
 
-      System.out.println("encoding " + entities.length + " entities into " + (_characteristics.length + _actions.length) + " arrays...")
-
-      //_characteristics.zipWithIndex.foreach { case (c, i) ⇒ System.out.println(c + " => " + entities.map(e ⇒ e.characteristics(i).value).toList.toArray) }
+      // debug:
+      //System.out.println("encoding " + entities.length + " entities into " + (_characteristics.length + _actions.length) + " arrays...")
 
       // forge as many outputs as expected
       val outputsForCharacteristics: List[Variable[_]] =

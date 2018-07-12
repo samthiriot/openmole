@@ -41,10 +41,11 @@ object Matching extends JavaLogger {
    * returns them.
    */
   def matchOrCoverIndividual(
-    rules:    Array[ClassifierRule],
-    entity:   Entity,
-    _actions: Seq[MicroGenes.Gene[_]],
-    context:  Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    rules:         Array[ClassifierRule],
+    entity:        Entity,
+    _actions:      Seq[MicroGenes.Gene[_]],
+    context:       Context,
+    deterministic: Boolean)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
 
     val matched: Array[ClassifierRule] = rules.filter(r ⇒ r.matches(entity))
     if (matched.length == 1) {
@@ -55,7 +56,12 @@ object Matching extends JavaLogger {
       //System.out.println("we might match entity " + entity + " with " + matched.length + " rules")
       //System.out.println(ClassifierRule.toPrettyString(matched.toList))
       // TODO we select randomly here... what would be the good solution?
-      matched(rng().nextInt(matched.length))
+      if (deterministic) {
+        matched(0)
+      }
+      else {
+        matched(rng().nextInt(matched.length))
+      }
     }
     else {
       System.out.println("covering entity " + entity)
@@ -64,7 +70,8 @@ object Matching extends JavaLogger {
   }
 
   def apply(
-    _actions: Seq[MicroGenes.Gene[_]]
+    _actions:      Seq[MicroGenes.Gene[_]],
+    deterministic: Boolean
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Matching") { (context, rng, _) ⇒
@@ -73,15 +80,20 @@ object Matching extends JavaLogger {
       val entities: Array[Entity] = context(DecodeEntities.varEntities)
       val rules: Array[ClassifierRule] = context(varRules)
 
-      val rulesShuffled: Array[ClassifierRule] = rng().shuffle(rules.toList).toArray
+      val rulesShuffled: Array[ClassifierRule] = deterministic match {
+        case true  ⇒ rules
+        case false ⇒ rng().shuffle(rules.toList).toArray
+      }
 
-      System.out.println(
+      // debug:
+      /*System.out.println(
         "Iteration " + iteration +
           " matching on " + entities.length + " entities based on " + rules.length + " rules")
+      */
 
       // create the set of actions to be used
       val rulesActionSet: Array[ClassifierRule] =
-        entities.map { e ⇒ matchOrCoverIndividual(rulesShuffled, e, _actions, context)(rng, newFile, fileService) }
+        entities.map { e ⇒ matchOrCoverIndividual(rulesShuffled, e, _actions, context, deterministic)(rng, newFile, fileService) }
           .toArray
       //System.out.println("Here are the rules: " + ClassifierRule.toPrettyString(rulesActionSet.toList))
 

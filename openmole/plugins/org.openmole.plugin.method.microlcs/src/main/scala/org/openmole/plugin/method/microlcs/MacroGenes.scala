@@ -25,9 +25,37 @@ import org.openmole.core.workflow.sampling.Factor
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.random.RandomProvider
 
-object MacroGenes {
+/**
+ * A Macro gene refers to a gene coding an intervention
+ * at the scale of the entire model.
+ * It is made of several classifier rules and has a performance
+ * evaluated over one or more macro indicators
+ */
+case class MacroGene(
+  id:                       Int,
+  name:                     String,
+  rules:                    Array[ClassifierRule],
+  override var performance: Seq[Seq[Double]] //,
+) extends HasMultiObjectivePerformance {
 
-  case class MacroGene(
-    rules: List[ClassifierRule]
+  override def toString: String = "Plan " + name + ": " +
+    performanceToString() +
+    "\n\t" + rules.map(_.toString).mkString("\n\telse ")
+}
+
+object MacroGene {
+
+  def nameForId(id: Int) = Integer.toString(id, 36).toUpperCase
+
+  def nextId(existing: Array[MacroGene]): Int = existing.map(_.id).max + 1
+
+  def apply(id: Int, rules: Array[ClassifierRule]): MacroGene = MacroGene(
+    id,
+    nameForId(id),
+    rules,
+    Seq()
   )
+
+  def toPrettyString(g: Iterable[MacroGene]): String = g.map(_.toString).mkString(",\n")
+
 }

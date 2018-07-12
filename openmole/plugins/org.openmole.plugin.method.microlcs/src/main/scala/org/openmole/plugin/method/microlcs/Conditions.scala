@@ -34,6 +34,7 @@ trait Condition[T] {
     case otherCasted: Condition[T] ⇒ subsums(otherCasted)
     case _                         ⇒ throw new IllegalArgumentException("Can only compare similar conditions")
   }
+  def generalityIndice: Int
 }
 
 abstract class ConditionOneValue[T] extends Condition[T] {
@@ -44,31 +45,33 @@ abstract class WildCard[T] extends Condition[T] {
   override def matches(v: T): Boolean = true
   override def toString(): String = { attributeName + "==#" }
   override def subsums(other: Condition[T]) = true
+  override def generalityIndice = 2
 }
 
 abstract class LowerThanNumCondition[T: Numeric] extends ConditionOneValue[T] {
-  override def matches(v: T): Boolean = { implicitly[Numeric[T]].toDouble(refValue) <= implicitly[Numeric[T]].toDouble(v) }
+  override def matches(v: T): Boolean = { implicitly[Numeric[T]].toDouble(v) <= implicitly[Numeric[T]].toDouble(refValue) }
   override def toString(): String = { attributeName + "<=" + refValue }
   override def subsums(other: Condition[T]) = other match {
     case lt: LowerThanNumCondition[T]  ⇒ (implicitly[Numeric[T]].toDouble(refValue) >= implicitly[Numeric[T]].toDouble(lt.refValue))
     case _: GreaterThanNumCondition[T] ⇒ false
-    case _: EqualToCondition[T]        ⇒ false
+    case eq: EqualToCondition[T]       ⇒ (implicitly[Numeric[T]].toDouble(refValue) >= implicitly[Numeric[T]].toDouble(eq.refValue))
     case _: WildCard[T]                ⇒ false
     case _                             ⇒ false // TODO warn ???
   }
-
+  override def generalityIndice = 1
 }
 
 abstract class GreaterThanNumCondition[T: Numeric] extends ConditionOneValue[T] {
-  override def matches(v: T): Boolean = { implicitly[Numeric[T]].toDouble(refValue) >= implicitly[Numeric[T]].toDouble(v) }
+  override def matches(v: T): Boolean = { implicitly[Numeric[T]].toDouble(v) >= implicitly[Numeric[T]].toDouble(refValue) }
   override def toString(): String = { attributeName + ">=" + refValue }
   override def subsums(other: Condition[T]) = other match {
     case lt: GreaterThanNumCondition[T] ⇒ implicitly[Numeric[T]].toDouble(refValue) <= implicitly[Numeric[T]].toDouble(lt.refValue)
     case _: LowerThanNumCondition[T]    ⇒ false
-    case _: EqualToCondition[T]         ⇒ false
+    case eq: EqualToCondition[T]        ⇒ (implicitly[Numeric[T]].toDouble(refValue) <= implicitly[Numeric[T]].toDouble(eq.refValue))
     case _: WildCard[T]                 ⇒ false
     case _                              ⇒ false // TODO warn ???
   }
+  override def generalityIndice = 1
 }
 
 abstract class EqualToCondition[T] extends ConditionOneValue[T] {
@@ -81,6 +84,7 @@ abstract class EqualToCondition[T] extends ConditionOneValue[T] {
     case _: WildCard[T]                ⇒ false
     case _                             ⇒ false // TODO warn ???
   }
+  override def generalityIndice = 0
 }
 
 case class WildCardIntCondition(attributeName: String) extends WildCard[Int]

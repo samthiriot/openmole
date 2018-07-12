@@ -54,6 +54,10 @@ package object microlcs {
 
   val varIterations = Val[Int]("iterations", namespace = namespaceMicroLCS)
 
+  val varPlans = Val[Array[MacroGene]]("plans", namespace = namespaceMicroLCS)
+
+  val varPlanSimulated = Val[MacroGene]("plan_simulated", namespace = namespaceMicroLCS)
+
   implicit def scope = DefinitionScope.Internal
 
   /**
@@ -68,17 +72,21 @@ package object microlcs {
     iterations:           Int,
     evaluation:           Puzzle,
     microMinimize:        Seq[Val[Double]],
-    microMaximize:        Seq[Val[Double]]
+    microMaximize:        Seq[Val[Double]],
+    macroMinimize:        Seq[Val[Double]],
+    macroMaximize:        Seq[Val[Double]]
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
     //
     // rng: RandomProvider,
 
+    val simulationCapsuleMicro = Capsule(MoleTask(evaluation))
+
     // the first step is to decode the initial lists of characteristics as lists of individuals.
     val decodeIndividuals = DecodeEntities(microCharacteristics, microActions)
     val sDecodeIndividuals = Slot(decodeIndividuals)
 
-    val doMatching = Matching(microActions)
+    val doMatching = Matching(microActions, false)
     val cDoMatching = Capsule(doMatching)
     val sDoMatching = Slot(cDoMatching)
 
@@ -114,20 +122,39 @@ package object microlcs {
 
     val export = ExportRules(microCharacteristics, microActions, microMinimize, microMaximize)
 
-    (
-      (
-        (
-          sDecodeIndividuals --
-          beginLoopExecInit --
-          dispatch -< (sDoMatching -- sEncodeIndividuals -- evaluation -- sEvaluate) >-
-          aggregate -- subsume -- sEvolve -- sDelete
-        ) & // convey rules, iteration, micro entities and other information over the evaluation
-          (sEncodeIndividuals -- sEvaluate) &
-          // loop
-          (sDelete -- (beginLoopExecLoop when "microlcs$iterations < " + iterations))
+    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, 100)
+    val generateInitPlansSlot = Slot(generateInitPlans)
 
-      ) -- export
+    val dispatchPlans = ExplorationTask(SamplePlans())
+    val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += varPlanSimulated)
+    val encodeIndividualsPlans = EncodeEntities(microCharacteristics, microActions) set ((inputs, outputs) += varPlanSimulated)
+    val simulationCapsuleMacro = Capsule(MoleTask(evaluation) set (
+      (inputs, outputs) += (varPlanSimulated, varIterations, varRules, DecodeEntities.varEntities, DecodeEntities.varMin, DecodeEntities.varMax)
     )
+    )
+
+    val evaluatePlan = EvaluateMacro(microMinimize, microMaximize, macroMinimize, macroMaximize)
+
+    val aggregatePlans = AggregateResultsPlan()
+
+    val evolvePlans = EvolvePlans(100)
+
+    (
+
+      (
+        sDecodeIndividuals -- beginLoopExecInit -- dispatch
+        -< (sDoMatching -- sEncodeIndividuals -- simulationCapsuleMicro -- sEvaluate) >-
+        aggregate -- subsume -- sEvolve -- sDelete
+      ) & // convey rules, iteration, micro entities and other information over the evaluation
+        (sEncodeIndividuals -- sEvaluate) &
+        // loop
+        (sDelete -- (beginLoopExecLoop when "microlcs$iterations < " + iterations)) &
+        // continue
+        (sDelete -- (generateInitPlansSlot when "microlcs$iterations == " + iterations)) &
+        (generateInitPlansSlot -- dispatchPlans -< matchingPlans -- encodeIndividualsPlans -- simulationCapsuleMacro -- evaluatePlan >- aggregatePlans -- evolvePlans)
+
+    ) // TODO !!! -- export
+    //-- evaluation
 
     /*
     (
