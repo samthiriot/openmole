@@ -19,6 +19,7 @@ package org.openmole.plugin.method.microlcs
 
 import org.openmole.core.context.Variable
 import org.openmole.core.expansion.FromContext
+import org.openmole.core.workflow.dsl.{ inputs, outputs }
 import org.openmole.core.workflow.sampling.Sampling
 import org.openmole.tool.logger.JavaLogger
 
@@ -41,7 +42,8 @@ sealed class SamplePlans() extends Sampling {
     DecodeEntities.varEntities,
     varPlans,
     varRules,
-    DecodeEntities.varMin, DecodeEntities.varMax
+    DecodeEntities.varMin, DecodeEntities.varMax,
+    varPlansBefore
   )
 
   override def prototypes = List(
@@ -49,7 +51,8 @@ sealed class SamplePlans() extends Sampling {
     DecodeEntities.varEntities,
     varRules,
     varPlanSimulated,
-    DecodeEntities.varMin, DecodeEntities.varMax
+    DecodeEntities.varMin, DecodeEntities.varMax,
+    varPlansBefore
   )
 
   override def apply(): FromContext[Iterator[Iterable[Variable[_]]]] = FromContext { ctxt ⇒
@@ -67,6 +70,9 @@ sealed class SamplePlans() extends Sampling {
 
     val allRules: Array[ClassifierRule] = context(varRules)
 
+    // TODO to be removed
+    val previousPlans: Array[MacroGene] = context(varPlansBefore)
+
     System.out.println("dispatching the " + plans.length + " plans for evaluation")
 
     List(
@@ -78,7 +84,8 @@ sealed class SamplePlans() extends Sampling {
       plans.map(p ⇒ Variable(varPlanSimulated, p)).toList,
       // TODO virer ?
       plans.map(_ ⇒ Variable(DecodeEntities.varMin, mins)).toList,
-      plans.map(_ ⇒ Variable(DecodeEntities.varMax, maxs)).toList
+      plans.map(_ ⇒ Variable(DecodeEntities.varMax, maxs)).toList,
+      plans.map(_ ⇒ Variable(varPlansBefore, previousPlans)).toList
     ).toIterator
   }
 

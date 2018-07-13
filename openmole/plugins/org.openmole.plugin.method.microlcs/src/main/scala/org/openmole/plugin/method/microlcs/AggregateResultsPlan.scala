@@ -54,13 +54,16 @@ object AggregateResultsPlan extends JavaLogger {
 
       val plansSimulated: Array[MacroGene] = context(varPlanSimulated.toArray)
 
+      val plansBefore: Array[Array[MacroGene]] = context(varPlansBefore.toArray)
+
       List(
         Variable(varIterations, iteration),
         Variable(varRules, rules.flatten),
         Variable(DecodeEntities.varEntities, entities(0)),
         Variable(DecodeEntities.varMin, minsFlatten),
         Variable(DecodeEntities.varMax, maxsFlatten),
-        Variable(varPlans, plansSimulated)
+        Variable(varPlans, plansSimulated),
+        Variable(varPlansBefore, plansBefore(0))
       )
 
     } set (
@@ -71,13 +74,15 @@ object AggregateResultsPlan extends JavaLogger {
       inputs += DecodeEntities.varMin.toArray,
       inputs += DecodeEntities.varMax.toArray,
       inputs += varPlanSimulated.toArray,
+      inputs += varPlansBefore.toArray,
 
       outputs += varIterations,
       outputs += varRules,
       outputs += DecodeEntities.varEntities,
       outputs += DecodeEntities.varMin,
       outputs += DecodeEntities.varMax,
-      outputs += varPlans
+      outputs += varPlans,
+      outputs += varPlansBefore
 
     )
 

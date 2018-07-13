@@ -23,6 +23,7 @@ import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.domain.{ Bounds, Fix, Sized }
 import org.openmole.core.workflow.sampling.Factor
 import org.openmole.core.workspace.NewFile
+import org.openmole.tool.logger.JavaLogger
 import org.openmole.tool.random.RandomProvider
 
 /**
@@ -43,7 +44,7 @@ case class MacroGene(
     "\n\t" + rules.map(_.toString).mkString("\n\telse ")
 }
 
-object MacroGene {
+object MacroGene extends JavaLogger {
 
   var lastId: Int = 0
 
@@ -65,25 +66,48 @@ object MacroGene {
 
   def toPrettyString(g: Iterable[MacroGene]): String = g.map(_.toString).mkString(",\n")
 
-  /*
-  def mutate(p:MacroGene)(implicit rng: RandomProvider): MacroGene = {
+  def mutate(
+    p:            MacroGene,
+    microActions: Seq[MicroGenes.Gene[_]],
+    mins:         Array[Double],
+    maxs:         Array[Double],
+    context:      Context
+  )(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): MacroGene = {
 
     // TODO mutate !
 
     // don't mutate the last one ???
 
-    val rulesMutated: Array[ClassifierRule] =
-       p.rules.map( r => if (rng().nextDouble() <= 0.5)  )
+    // we can mutate:
+    // * only conditions, not actions (why ?)
+    // * only the first rules, not the last one
+    // *
 
+    val rand = rng()
 
-    val q =
-      p.copy(
-        id = lastId,
-        name = nameForId(lastId),
-        performance = Seq(),
-        rules = rulesMutated
-      )
+    // select the rule we will mutate
+    val idxRule: Int = rand.nextInt(p.rules.length - 1)
+
+    val rulesMutated = p.rules.slice(0, idxRule - 1) ++
+      List(
+        ClassifierRule.mutateCondition(
+          p.rules(idxRule),
+          microActions,
+          mins, maxs,
+          context)) ++
+        p.rules.slice(idxRule + 1, p.rules.length)
+
     lastId = lastId + 1
+    val updated = p.copy(
+      id = lastId,
+      name = nameForId(lastId),
+      performance = Seq(),
+      rules = rulesMutated
+    )
+
+    Log.log(Log.FINE, "mutated rule " + idxRule + ":\n\tfrom: " + p + "\n\t  to: " + updated)
+
+    updated
   }
-  */
+
 }

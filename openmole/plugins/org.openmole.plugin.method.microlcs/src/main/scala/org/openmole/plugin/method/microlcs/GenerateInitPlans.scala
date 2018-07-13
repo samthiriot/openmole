@@ -165,7 +165,8 @@ object GenerateInitPlans extends JavaLogger {
       List(
         Variable(varRules, rulesFiltered),
         Variable(varPlans, plans),
-        Variable(varIterations, iteration + 1)
+        Variable(varIterations, iteration + 1),
+        Variable(varPlansBefore, Array[MacroGene]())
       )
 
     } set (
@@ -180,6 +181,7 @@ object GenerateInitPlans extends JavaLogger {
       (inputs, outputs) += DecodeEntities.varEntities,
       outputs += varPlans,
       outputs += varRules,
+      outputs += varPlansBefore,
 
       (inputs, outputs) += DecodeEntities.varMin,
       (inputs, outputs) += DecodeEntities.varMax

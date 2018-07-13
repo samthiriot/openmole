@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.Variable
+import org.openmole.core.context.{ Context, Variable }
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
@@ -32,7 +32,8 @@ import org.openmole.tool.random.RandomProvider
 object EvolvePlans extends JavaLogger {
 
   def apply(
-    maxrules: Int
+    maxrules:     Int,
+    microActions: Seq[MicroGenes.Gene[_]]
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("EvolvePlans") { (context, rng, _) ⇒
@@ -45,10 +46,12 @@ object EvolvePlans extends JavaLogger {
       val rules: Array[ClassifierRule] = context(varRules)
 
       val plans: Array[MacroGene] = context(varPlans)
+      val plansBefore: Array[MacroGene] = context(varPlansBefore)
 
       //System.out.println("Iteration " + iteration + " Here are the " + plans.length + " plans after evaluation:\n" + MacroGene.toPrettyString(plans))
 
-      val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plans)
+      // elitism: we conserve the best of the previous as well !
+      val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plans ++ plansBefore)
 
       //System.out.println("Pareto optimal plans:\n" + MacroGene.toPrettyString(bestPlans.toList.sortWith(_.performanceAggregated(0) < _.performanceAggregated(0))))
 
@@ -57,18 +60,39 @@ object EvolvePlans extends JavaLogger {
       System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(plansRankedPareto))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
-      var parents: Iterable[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, plansRankedPareto.toList)(rng)
+      val parents: Iterable[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, plansRankedPareto.toList)(rng)
+
+      // we can do crossover between rules which are of similar size
+
+      val mins: Array[Double] = context(DecodeEntities.varMin)
+      val maxs: Array[Double] = context(DecodeEntities.varMax)
 
       // mutate !
-      // TODO parents.map( MacroGene.mutate(_))
+      val plansMutated = parents.map(
+        p ⇒
+          if (p.rules.length > 1)
+            MacroGene.mutate(
+            p,
+            microActions,
+            mins,
+            maxs,
+            context
+          )(rng, newFile, fileService)
+          else
+            p
+      ).toArray
 
-      List()
+      List(
+        Variable(varPlans, plansMutated),
+        Variable(varPlansBefore, plans)
+      )
 
     } set (
       // the plans are taken as inputs, and evolved before being outputed
       (inputs, outputs) += varPlans,
       // the rules we used for each entity
       (inputs, outputs) += varRules,
+      (inputs, outputs) += varPlansBefore,
 
       (inputs, outputs) += varIterations,
       (inputs, outputs) += DecodeEntities.varEntities,

@@ -55,6 +55,7 @@ package object microlcs {
   val varIterations = Val[Int]("iterations", namespace = namespaceMicroLCS)
 
   val varPlans = Val[Array[MacroGene]]("plans", namespace = namespaceMicroLCS)
+  val varPlansBefore = Val[Array[MacroGene]]("plans_before", namespace = namespaceMicroLCS)
 
   val varPlanSimulated = Val[MacroGene]("plan_simulated", namespace = namespaceMicroLCS)
 
@@ -73,13 +74,6 @@ package object microlcs {
 
   }
 
-  val micro1 = Val[Array[Int]]
-  val micro2 = Val[Array[Boolean]]
-  val m1: MicroCharacteristic = micro1
-  val m2: MicroCharacteristic = micro2
-  val cc: MicroCharacteristics = Seq(micro1, micro2)
-
-  //type MicroCharacteristic[T] = Val[Array[T]]
   type MicroCharacteristics = Seq[MicroCharacteristic]
 
   /**
@@ -102,7 +96,7 @@ package object microlcs {
     //
     // rng: RandomProvider,
 
-    val simulationCapsuleMicro = evaluation// Capsule(MoleTask(evaluation))
+    val simulationCapsuleMicro = evaluation // Capsule(MoleTask(evaluation))
 
     // the first step is to decode the initial lists of characteristics as lists of individuals.
     val decodeIndividuals = DecodeEntities(microCharacteristics, microActions)
@@ -148,10 +142,15 @@ package object microlcs {
     val generateInitPlansSlot = Slot(generateInitPlans)
 
     val dispatchPlans = ExplorationTask(SamplePlans())
-    val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += varPlanSimulated)
-    val encodeIndividualsPlans = EncodeEntities(microCharacteristics, microActions) set ((inputs, outputs) += varPlanSimulated)
+    val cDispatchPlans = Capsule(dispatchPlans)
+    val sDispatchPlansInit = Slot(cDispatchPlans)
+    val sDispatchPlansLoop = Slot(cDispatchPlans)
+
+    val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
+    val encodeIndividualsPlans = EncodeEntities(microCharacteristics, microActions) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
+    val simulationMacro = evaluation.copy()
     val simulationCapsuleMacro = Capsule(MoleTask(evaluation) set (
-      (inputs, outputs) += (varPlanSimulated, varIterations, varRules, DecodeEntities.varEntities, DecodeEntities.varMin, DecodeEntities.varMax)
+      (inputs, outputs) += (varPlanSimulated, varIterations, varRules, DecodeEntities.varEntities, DecodeEntities.varMin, DecodeEntities.varMax, varPlansBefore)
     )
     )
 
@@ -159,7 +158,8 @@ package object microlcs {
 
     val aggregatePlans = AggregateResultsPlan()
 
-    val evolvePlans = EvolvePlans(100)
+    val evolvePlans = EvolvePlans(100, microActions)
+    val sEvolvePlans = Slot(evolvePlans)
 
     (
 
@@ -173,10 +173,16 @@ package object microlcs {
         (sDelete -- (beginLoopExecLoop when "microlcs$iterations < " + iterations)) &
         // continue
         (sDelete -- (generateInitPlansSlot when "microlcs$iterations == " + iterations)) &
-        (generateInitPlansSlot -- dispatchPlans -< matchingPlans -- encodeIndividualsPlans -- simulationCapsuleMacro -- evaluatePlan >- aggregatePlans -- evolvePlans)
+        (generateInitPlansSlot -- sDispatchPlansInit -< matchingPlans -- encodeIndividualsPlans -- simulationCapsuleMacro -- evaluatePlan >- aggregatePlans -- sEvolvePlans) &
+        (sEvolvePlans -- (sDispatchPlansLoop when "microlcs$iterations < " + (iterations * 2)))
+
+    // propagate varPlansBefore
+    // & (sDispatchPlansInit -- sEvolvePlans)
 
     ) // TODO !!! -- export
     //-- evaluation
+
+    // TODO varPlansBefore
 
     /*
     (

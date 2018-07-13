@@ -151,36 +151,44 @@ object ClassifierRule {
     )
   }
 
+  def mutateCondition(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    val rand = rng()
+    val idxChange = rand.nextInt(r.conditions.length)
+    r.copy(
+      name = getNextName(),
+      conditions = r.conditions.slice(0, idxChange - 1) ++
+        Array(Condition.mutate(r.conditions(idxChange), mins(idxChange), maxs(idxChange))) ++
+        r.conditions.slice(idxChange + 1, r.conditions.length),
+      performance = Seq()
+    )
+  }
+
+  def mutateAction(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    // change actions
+    val rand = rng()
+    val idxChange = rand.nextInt(r.actions.length)
+    r.copy(
+      name = getNextName(),
+      actions =
+        r.actions.slice(0, idxChange - 1) ++
+          Array(
+            Variable.unsecure(
+              microActions(idxChange).prototype,
+              microActions(idxChange).makeRandomValue(context)
+            )) ++
+            r.actions.slice(idxChange + 1, r.conditions.length),
+      performance = Seq()
+    )
+  }
+
   def mutate(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
     val rand = rng()
     if (rand.nextDouble() <= r.conditions.length.toDouble / (r.conditions.length + r.actions.length)) {
-      // change conditions
-      val idxChange = rand.nextInt(r.conditions.length)
-      r.copy(
-        name = getNextName(),
-        conditions = r.conditions.slice(0, idxChange - 1) ++
-          Array(Condition.mutate(r.conditions(idxChange), mins(idxChange), maxs(idxChange))) ++
-          r.conditions.slice(idxChange + 1, r.conditions.length),
-        performance = Seq()
-      )
+      mutateCondition(r, microActions, mins, maxs, context)
     }
     else {
-      // change actions
-      val idxChange = rand.nextInt(r.actions.length)
-      r.copy(
-        name = getNextName(),
-        actions =
-          r.actions.slice(0, idxChange - 1) ++
-            Array(
-              Variable.unsecure(
-                microActions(idxChange).prototype,
-                microActions(idxChange).makeRandomValue(context)
-              )) ++
-              r.actions.slice(idxChange + 1, r.conditions.length),
-        performance = Seq()
-      )
+      mutateAction(r, microActions, mins, maxs, context)
     }
-
   }
 
 }
