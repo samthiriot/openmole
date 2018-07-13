@@ -17,6 +17,8 @@
 
 package org.openmole.plugin.method.microlcs
 
+import org.openmole.tool.random.RandomProvider
+
 import scala.annotation.tailrec
 
 /**
@@ -105,10 +107,35 @@ object HasMultiObjectivePerformance {
   def paretoFrontsToPrettyString[T <: HasMultiObjectivePerformance](fronts: Seq[Iterable[T]]): String =
     fronts.zipWithIndex
       .map {
-        case (f, i) ⇒ (i+1) + "th Pareto front:\n" +
+        case (f, i) ⇒ (i + 1) + "th Pareto front:\n" +
           f.toList.sortWith(_.performanceAggregated(0) < _.performanceAggregated(0))
           .map(_.toString)
           .mkString("\t\n")
       }.mkString("\n\n")
 
+  /**
+   * Selects the n best elements from a list of Pareto fronts.
+   * Will select all the first fronts, then randomly select
+   * some of the last front fitting the requested quantity
+   */
+  def selectParentsFromFronts[T <: HasMultiObjectivePerformance](
+    n:      Int,
+    fronts: List[Iterable[T]],
+    acc:    List[T]           = List()
+  )(implicit rng: RandomProvider): Iterable[T] = fronts match {
+    case Nil ⇒
+      // no more front to add; let's return that !
+      acc
+    case front :: tail ⇒
+      // there are still fronts available for play !
+      val frontList = front.toList
+      if (frontList.length <= n) {
+        // we still have space for the entire next front!
+        selectParentsFromFronts(n - frontList.length, tail, acc ++ frontList)
+      }
+      else {
+        // this front will use all the space...
+        acc ++ rng().shuffle(frontList).take(n) // TODO crowding operator ???
+      }
+  }
 }

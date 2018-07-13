@@ -45,17 +45,45 @@ case class MacroGene(
 
 object MacroGene {
 
+  var lastId: Int = 0
+
   def nameForId(id: Int) = Integer.toString(id, 36).toUpperCase
 
   def nextId(existing: Array[MacroGene]): Int = existing.map(_.id).max + 1
 
-  def apply(id: Int, rules: Array[ClassifierRule]): MacroGene = MacroGene(
-    id,
-    nameForId(id),
-    rules,
-    Seq()
-  )
+  def apply(id: Int, rules: Array[ClassifierRule]): MacroGene = {
+
+    lastId = if (id > lastId) id else lastId
+
+    MacroGene(
+      id,
+      nameForId(id),
+      rules,
+      Seq()
+    )
+  }
 
   def toPrettyString(g: Iterable[MacroGene]): String = g.map(_.toString).mkString(",\n")
 
+  /*
+  def mutate(p:MacroGene)(implicit rng: RandomProvider): MacroGene = {
+
+    // TODO mutate !
+
+    // don't mutate the last one ???
+
+    val rulesMutated: Array[ClassifierRule] =
+       p.rules.map( r => if (rng().nextDouble() <= 0.5)  )
+
+
+    val q =
+      p.copy(
+        id = lastId,
+        name = nameForId(lastId),
+        performance = Seq(),
+        rules = rulesMutated
+      )
+    lastId = lastId + 1
+  }
+  */
 }

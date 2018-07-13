@@ -129,12 +129,24 @@ object GenerateInitPlans extends JavaLogger {
 
       System.out.println("Generating the " + maxrules + " initial plans to be explored")
 
-      val rulesFiltered: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() > 0))
+      // keep only the rules which have been tested
+      val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() > 0))
+
+      // also, only keep the n best Pareto optimal solutions
+      val rulesRankedPareto: Seq[Iterable[ClassifierRule]] = HasMultiObjectivePerformance.detectParetoFronts(rulesTested)
+      //val rulesRankedParetoBest = rulesRankedPareto.take(1)
+
+      //System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(rulesRankedPareto))
+
+      // only keep max N of these solutions
+      val rulesFiltered: Array[ClassifierRule] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, rulesRankedPareto.toList)(rng).toArray
+
+      // so rulesFiltered contains only the best of the best rules
 
       val countPerMicro = maxrules / (microMinimize.length + microMaximize.length)
 
       val plans: Array[MacroGene] =
-        (microMaximize ++ microMaximize)
+        (microMinimize ++ microMaximize)
           .zipWithIndex
           .flatMap {
             case (t, i) ⇒ takeNRules(

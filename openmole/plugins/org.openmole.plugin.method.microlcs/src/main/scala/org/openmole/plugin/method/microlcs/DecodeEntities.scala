@@ -53,16 +53,16 @@ object DecodeEntities {
 
   }
 
-  //U] forSome { type U }
   def apply[T](
-    _characteristics: Seq[Val[Array[T]] forSome { type T }],
-    _actions:         Seq[MicroGenes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+    _characteristics: MicroCharacteristics,
+    _actions:         Seq[MicroGenes.Gene[_]]
+  )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("DecodeIndividuals") { (context, rng, _) ⇒
 
       // check input parameters: all the arrays for characteristics should be of the right size
       // ... build the list of the length of each list passed for characteristics, and keep only distinct values
-      val countsEntities: List[Int] = _characteristics.map(v ⇒ context(v).length).toList.distinct
+      val countsEntities: List[Int] = _characteristics.map(v ⇒ context(v.prototype).length).toList.distinct
       // ... there should be only
       if (countsEntities.length > 1) {
         throw new IllegalArgumentException("the characteristics arrays should have the same length")
@@ -72,13 +72,13 @@ object DecodeEntities {
 
       System.out.println("There are " + countEntities + " entities for this study having each " + _characteristics.size + " characteristics and " + _actions.size + " parameters")
 
-      val _characteristicsValues: Seq[Array[_]] = _characteristics.map(v ⇒ context(v))
+      val _characteristicsValues: Seq[Array[_]] = _characteristics.map(v ⇒ context(v.prototype))
 
       val entities: Array[Entity] = Array.tabulate(countEntities)(
         idx ⇒
           Entity(
             id = idx,
-            characteristics = _characteristics.zipWithIndex.map { case (c, i) ⇒ Variable.unsecure(Val(c.name)(c.`type`), _characteristicsValues(i)(idx)) }.toArray,
+            characteristics = _characteristics.zipWithIndex.map { case (c, i) ⇒ Variable.unsecure(Val(c.prototype.name)(c.prototype.`type`), _characteristicsValues(i)(idx)) }.toArray,
             actions = _actions.map(a ⇒ Variable.unsecure(a.prototype, null /*a.makeRandomValue(context)(rng, newFile, fileService)*/ )).toArray
           )
       )
@@ -113,7 +113,7 @@ object DecodeEntities {
     } set (
       // we expect as inputs:
       // ... the characteristics of the individuals we should receive
-      inputs ++= _characteristics,
+      inputs ++= _characteristics.map(_.prototype),
       // ... the list of variables for the outputs
       //inputs ++= _actions,
       // we provide as outputs

@@ -60,6 +60,28 @@ package object microlcs {
 
   implicit def scope = DefinitionScope.Internal
 
+  case class MicroCharacteristic(prototype: Val[Array[T]] forSome { type T })
+
+  object MicroCharacteristic {
+
+    implicit def valDoubleIsMicroCharacteristic(vd: Val[Array[Double]]) = MicroCharacteristic(vd)
+    implicit def valIntIsMicroCharacteristic(vi: Val[Array[Int]]) = MicroCharacteristic(vi)
+    implicit def valBooleanIsMicroCharacteristic(vb: Val[Array[Boolean]]) = MicroCharacteristic(vb)
+    implicit def valStringIsMicroCharacteristic(vs: Val[Array[String]]) = MicroCharacteristic(vs)
+
+    //implicit def microCharacteristicIsVal(m: MicroCharacteristic): Val[Array[T]] forSome { type T } = m.prototype
+
+  }
+
+  val micro1 = Val[Array[Int]]
+  val micro2 = Val[Array[Boolean]]
+  val m1: MicroCharacteristic = micro1
+  val m2: MicroCharacteristic = micro2
+  val cc: MicroCharacteristics = Seq(micro1, micro2)
+
+  //type MicroCharacteristic[T] = Val[Array[T]]
+  type MicroCharacteristics = Seq[MicroCharacteristic]
+
   /**
    * Entry point for the method: applies MicroLCS
    * with a list of input characteristics for entities,
@@ -67,7 +89,7 @@ package object microlcs {
    * a count of iterations to drive.
    */
   def MicroLCS(
-    microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
+    microCharacteristics: MicroCharacteristics, // Seq[Val[Array[T]] forSome { type T }],
     microActions:         Seq[MicroGenes.Gene[_]],
     iterations:           Int,
     evaluation:           Puzzle,
@@ -80,7 +102,7 @@ package object microlcs {
     //
     // rng: RandomProvider,
 
-    val simulationCapsuleMicro = Capsule(MoleTask(evaluation))
+    val simulationCapsuleMicro = evaluation// Capsule(MoleTask(evaluation))
 
     // the first step is to decode the initial lists of characteristics as lists of individuals.
     val decodeIndividuals = DecodeEntities(microCharacteristics, microActions)
@@ -101,7 +123,7 @@ package object microlcs {
     val evolve = Evolve(microActions, microCharacteristics, 100)
     val sEvolve = Slot(evolve)
 
-    val delete = Delete(100)
+    val delete = Delete(200)
     val cDelete = Capsule(delete)
     val sDelete = Slot(cDelete)
 
@@ -122,7 +144,7 @@ package object microlcs {
 
     val export = ExportRules(microCharacteristics, microActions, microMinimize, microMaximize)
 
-    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, 100)
+    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, 500)
     val generateInitPlansSlot = Slot(generateInitPlans)
 
     val dispatchPlans = ExplorationTask(SamplePlans())

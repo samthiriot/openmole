@@ -32,7 +32,7 @@ object EncodeEntities {
 
   // ugly.
   // but seriously, spending hours for manipulating generics is enough.
-  def toArrayTyped[T](elems: Seq[Any]): Array[_] = elems(0) match {
+  def toArrayTyped(elems: Seq[Any]): Array[_] = elems(0) match {
     case _: Double  ⇒ elems.asInstanceOf[Seq[Double]].toArray
     case _: Integer ⇒ elems.asInstanceOf[Seq[Integer]].toArray
     case _: Boolean ⇒ elems.asInstanceOf[Seq[Boolean]].toArray
@@ -41,8 +41,9 @@ object EncodeEntities {
   }
 
   def apply[T](
-    _characteristics: Seq[Val[Array[Q]] forSome { type Q }],
-    _actions:         Seq[MicroGenes.Gene[_]])(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
+    _characteristics: MicroCharacteristics,
+    _actions:         Seq[MicroGenes.Gene[_]]
+  )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("EncodeIndividuals") { (context, rng, _) ⇒
 
@@ -57,9 +58,9 @@ object EncodeEntities {
         _characteristics
           .zipWithIndex
           .map {
-            case (c: Val[Array[T]], i) ⇒
+            case (c, i) ⇒ // : Val[Array[Q]
               Variable.unsecure(
-                c,
+                c.prototype,
                 toArrayTyped(
                   entities
                     .map(e ⇒ e.characteristics(i).value)
@@ -99,7 +100,7 @@ object EncodeEntities {
 
       // we provide as outputs
       // ... the entities as arrays
-      outputs ++= _characteristics,
+      outputs ++= _characteristics.map(_.prototype),
       outputs ++= _actions.map(g ⇒ g.prototype.toArray).toSeq,
 
       (inputs, outputs) += DecodeEntities.varMin,

@@ -35,7 +35,11 @@ import org.openmole.tool.random.RandomProvider
  */
 object Evolve extends JavaLogger {
 
-  def selectBest(indices: List[Int], rules: Array[ClassifierRule], lastSoFar: ClassifierRule, bestSoFar: ClassifierRule): (ClassifierRule, ClassifierRule) = indices match {
+  def selectBest(
+    indices:   List[Int],
+    rules:     Array[ClassifierRule],
+    lastSoFar: ClassifierRule,
+    bestSoFar: ClassifierRule): (ClassifierRule, ClassifierRule) = indices match {
     case Nil ⇒
       //System.out.println("returning " + bestSoFar + " " + lastSoFar)
       (bestSoFar, lastSoFar)
@@ -65,7 +69,7 @@ object Evolve extends JavaLogger {
 
   def apply(
     microActions:         Seq[MicroGenes.Gene[_]],
-    microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
+    microCharacteristics: MicroCharacteristics,
     rulesCount:           Int
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 

@@ -24,6 +24,7 @@ import org.openmole.tool.random.RandomProvider
 
 abstract class AbstractClassifier extends HasMultiObjectivePerformance {
 
+  val id: Int
   val name: String
   val age: Int
 
@@ -87,6 +88,7 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
 }
 
 case class ClassifierRule(
+  id:                       Int,
   name:                     String,
   conditions:               Array[Condition[_]],
   actions:                  Array[Variable[Q] forSome { type Q }],
@@ -112,6 +114,7 @@ object ClassifierRule {
     context:  Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
 
     ClassifierRule(
+      ClassifierRule.lastId,
       // generate an alphanumeric string
       getNextName(),
       // generate random conditions matching entity characteristics

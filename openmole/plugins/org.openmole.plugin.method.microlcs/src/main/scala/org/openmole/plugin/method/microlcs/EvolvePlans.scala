@@ -24,6 +24,7 @@ import org.openmole.core.workflow.dsl._
 import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
+import org.openmole.tool.random.RandomProvider
 
 /**
  * ensures we only keep a given maximum of rules
@@ -45,13 +46,21 @@ object EvolvePlans extends JavaLogger {
 
       val plans: Array[MacroGene] = context(varPlans)
 
-      System.out.println("Iteration " + iteration + " Here are the " + plans.length + " plans after evaluation:\n" + MacroGene.toPrettyString(plans))
+      //System.out.println("Iteration " + iteration + " Here are the " + plans.length + " plans after evaluation:\n" + MacroGene.toPrettyString(plans))
 
       val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plans)
 
-      System.out.println("Pareto optimal plans:\n" + MacroGene.toPrettyString(bestPlans.toList.sortWith(_.performanceAggregated(0) < _.performanceAggregated(0))))
+      //System.out.println("Pareto optimal plans:\n" + MacroGene.toPrettyString(bestPlans.toList.sortWith(_.performanceAggregated(0) < _.performanceAggregated(0))))
 
-      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(HasMultiObjectivePerformance.detectParetoFronts(plans)))
+      val plansRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(plans)
+
+      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(plansRankedPareto))
+
+      // select n parents; they will be taken from the first front, then next, then next, etc...
+      var parents: Iterable[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, plansRankedPareto.toList)(rng)
+
+      // mutate !
+      // TODO parents.map( MacroGene.mutate(_))
 
       List()
 

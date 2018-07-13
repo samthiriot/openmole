@@ -65,7 +65,7 @@ sealed class DispatchEntities(
     val mins: Array[Double] = context(DecodeEntities.varMin)
     val maxs: Array[Double] = context(DecodeEntities.varMax)
 
-    System.out.println("dispatching " + rules.length + " rules: " + rules.map(r ⇒ r.name).mkString(","))
+    //System.out.println("dispatching " + rules.length + " rules: " + rules.map(r ⇒ r.name).mkString(","))
 
     List(
       (0 to parallelEval).map(_ ⇒ Variable(varIterations, iteration)),

@@ -30,6 +30,8 @@ import org.openmole.core.workspace.NewFile
 import org.openmole.plugin.method.microlcs.DecodeEntities.{ varMax, varMin }
 import org.openmole.tool.random.RandomProvider
 
+import scala.annotation.tailrec
+
 object Matching extends JavaLogger {
 
   def covering(entity: Entity, _actions: Seq[MicroGenes.Gene[_]], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
@@ -64,11 +66,51 @@ object Matching extends JavaLogger {
       }
     }
     else {
-      System.out.println("covering entity " + entity)
+      //System.out.println("covering entity " + entity)
       covering(entity, _actions, context)
     }
   }
 
+  @tailrec
+  def matchOrCoverEntities(
+    rulesAvailable:   Array[ClassifierRule],
+    entitiesToCover:  List[Entity],
+    _actions:         Seq[MicroGenes.Gene[_]],
+    context:          Context,
+    deterministic:    Boolean,
+    entitiesCovered:  List[Entity],
+    rulesForEntities: List[ClassifierRule]
+  )(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): Array[ClassifierRule] = entitiesToCover match {
+    case Nil ⇒ rulesForEntities.toArray
+    case e :: tail ⇒
+      val matching: Array[ClassifierRule] = rulesAvailable.filter(r ⇒ r.matches(e))
+      val (r, createdRule) = {
+        if (matching.length == 1) {
+          (matching(0), false)
+        }
+        else if (matching.isEmpty) {
+          //System.out.println("covering entity " + entity)
+          (covering(e, _actions, context), true)
+        }
+        else if (deterministic) {
+          (matching(0), false)
+        }
+        else {
+          (matching(rng().nextInt(matching.length)), false)
+        }
+      }
+      val rulesAvailableUpdated = if (createdRule) { rulesAvailable :+ r } else rulesAvailable
+      matchOrCoverEntities(
+        rulesAvailableUpdated,
+        tail,
+        _actions,
+        context,
+        deterministic,
+        entitiesCovered ++ List(e),
+        rulesForEntities ++ List(r)
+      )
+
+  }
   def apply(
     _actions:      Seq[MicroGenes.Gene[_]],
     deterministic: Boolean
@@ -88,12 +130,15 @@ object Matching extends JavaLogger {
       // debug:
       /*System.out.println(
         "Iteration " + iteration +
-          " matching on " + entities.length + " entities based on " + rules.length + " rules")
+          " matching on " + entities.length + " entities " +
+          "based on " + rules.length + " rules: " + rulesShuffled.map(_.name).mkString(","))
       */
 
       // create the set of actions to be used
       val rulesActionSet: Array[ClassifierRule] =
-        entities.map { e ⇒ matchOrCoverIndividual(rulesShuffled, e, _actions, context, deterministic)(rng, newFile, fileService) }
+        matchOrCoverEntities(rulesShuffled, entities.toList, _actions, context, deterministic, List(), List())(rng, newFile, fileService)
+
+          //entities.map { e ⇒ matchOrCoverIndividual(rulesShuffled, e, _actions, context, deterministic)(rng, newFile, fileService) }
           .toArray
       //System.out.println("Here are the rules: " + ClassifierRule.toPrettyString(rulesActionSet.toList))
 

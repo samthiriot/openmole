@@ -48,7 +48,7 @@ object ExportRules extends JavaLogger {
   */
 
   def apply(
-    microCharacteristics: Seq[Val[Array[T]] forSome { type T }],
+    microCharacteristics: MicroCharacteristics,
     microActions:         Seq[MicroGenes.Gene[_]],
     microMinimize:        Seq[Val[Double]],
     microMaximize:        Seq[Val[Double]]
@@ -68,7 +68,7 @@ object ExportRules extends JavaLogger {
         Variable(varId, rulesFiltered.map(r ⇒ r.name))
       ) ++ microCharacteristics.zipWithIndex.map {
           case (c, i) ⇒ Variable(
-            Val[Array[String]](c.name, namespace = namespaceMicroLCS),
+            Val[Array[String]](c.prototype.name, namespace = namespaceMicroLCS),
             rulesFiltered.map(r ⇒ r.conditions(i).toString))
         } ++ microActions.zipWithIndex.map {
           case (a, i) ⇒ Variable.unsecure(
@@ -96,7 +96,7 @@ object ExportRules extends JavaLogger {
       outputs += varId,
       outputs += varCount,
       outputs += varIterationRule,
-      outputs ++= microCharacteristics.map(c ⇒ Val[Array[String]](c.name, namespace = namespaceMicroLCS)),
+      outputs ++= microCharacteristics.map(c ⇒ Val[Array[String]](c.prototype.name, namespace = namespaceMicroLCS)),
       outputs ++= microActions.map(a ⇒ a.prototype.toArray),
       outputs ++= (microMinimize ++ microMaximize).map(t ⇒ t.toArray)
 

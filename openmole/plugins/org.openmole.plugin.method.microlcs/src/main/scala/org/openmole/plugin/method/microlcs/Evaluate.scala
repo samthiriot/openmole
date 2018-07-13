@@ -56,7 +56,7 @@ object Evaluate extends JavaLogger {
 
       val entities = context(DecodeEntities.varEntities)
 
-      System.out.println("Iteration " + iteration + ": Evaluating the " + rulesUsed.length)
+      //System.out.println("Iteration " + iteration + ": Evaluating the " + rulesUsed.length+" rules used during this simulation")
 
       // update each rule with the corresponding information
       //val rulesUpdated: Array[ClassifierRule] =

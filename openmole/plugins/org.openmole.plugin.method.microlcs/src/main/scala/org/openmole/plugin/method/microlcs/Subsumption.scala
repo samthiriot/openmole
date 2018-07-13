@@ -99,18 +99,20 @@ object Subsumption extends JavaLogger {
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
 
-      System.out.println("Applying subsumption on " + rules.length + " rules")
+      //System.out.println("Applying subsumption on " + rules.length + " rules " + rules.map(_.name).mkString(","))
 
-      val rulesWithoutDoubles = rules.toSet.toArray
+      val rulesWithoutDoubles = rules.toSet
+      val rulesShuffled = rulesWithoutDoubles.toList.sortBy(_.id).toArray
+      //rng().shuffle(rulesWithoutDoubles.toList).toArray
 
-      System.out.println("Applying subsumption on " + rulesWithoutDoubles.length + " unique rules")
+      System.out.println("Applying subsumption on " + rulesShuffled.length + " unique rules " + rulesShuffled.map(_.name).mkString(","))
 
       val minPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
-        i ⇒ rulesWithoutDoubles.map(
+        i ⇒ rulesShuffled.map(
           r ⇒ r.performance(i).min
         ).min).toArray
       val maxPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
-        i ⇒ rulesWithoutDoubles.map(
+        i ⇒ rulesShuffled.map(
           r ⇒ r.performance(i).max
         ).max).toArray
 
@@ -122,13 +124,13 @@ object Subsumption extends JavaLogger {
         .mkString(",\n")
       )
 
-      val rulesUpdated = compareRules(epsilons, rulesWithoutDoubles.toList)
+      val rulesUpdated = compareRules(epsilons, rulesShuffled.toList)
 
       System.out.println("Rules after subsumption (capitalizing " +
         rulesUpdated.map(r ⇒ r.performance(0).length).sum + " simulations):\n" +
         ClassifierRule.toPrettyString(rulesUpdated))
 
-      System.out.println("Subsumption reduced rules from " + rulesWithoutDoubles.length + " to " + rulesUpdated.length + " rules")
+      System.out.println("Subsumption reduced rules from " + rulesShuffled.length + " to " + rulesUpdated.length + " rules")
 
       List(
         Variable(varRules, rulesUpdated.toArray)

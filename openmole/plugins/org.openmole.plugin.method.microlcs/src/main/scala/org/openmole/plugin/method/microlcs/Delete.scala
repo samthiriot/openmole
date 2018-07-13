@@ -47,12 +47,29 @@ object Delete extends JavaLogger {
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
 
-      System.out.println("there are " + rules.length + "rules, we can only keep a max of " + maxrules)
-      System.out.println("(nota: deletion to be developed !)")
-      // TODO
+      val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() > 0))
+      val rulesNonTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() == 0))
+
+      // what is the expected proportion of rules we want to maintain ?
+      val proportionNonTested: Double = 0.3
+      val rulesNonTestedToKeep: Int = (rules.length * proportionNonTested).toInt.min(rulesNonTested.length)
+      val rulesTestedToKeep: Int = maxrules - rulesNonTestedToKeep
+
+      val rulesRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(rulesTested)
+
+      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(rulesRankedPareto.take(3)))
+
+      // select n parents; they will be taken from the first front, then next, then next, etc...
+      val keptTested = HasMultiObjectivePerformance.selectParentsFromFronts(rulesTestedToKeep, rulesRankedPareto.toList)(rng).toArray
+      val keptNonTested = rng().shuffle(rulesNonTested.toList).take(rulesNonTestedToKeep.max(maxrules - keptTested.length))
+      val kept = keptTested ++ keptNonTested
+
+      System.out.println("there are " + rules.length + "rules, " +
+        "we can only keep a max of " + maxrules + "; " +
+        "we kept " + keptNonTested.length + " novel rules over " + kept.length + " rules")
 
       List(
-        Variable(varRules, rules)
+        Variable(varRules, kept.toArray)
       )
 
     } set (
