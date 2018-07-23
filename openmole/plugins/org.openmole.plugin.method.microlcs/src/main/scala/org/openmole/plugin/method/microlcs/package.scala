@@ -37,6 +37,7 @@ import org.openmole.core.fileservice.FileService
 
 import scala.reflect.runtime.universe._
 import org.openmole.core.expansion.FromContext
+import org.openmole.core.workflow.execution.EnvironmentProvider
 import org.openmole.plugin.method.microlcs.DecodeEntities.{ varMax, varMin }
 
 import Numeric.Implicits._
@@ -89,6 +90,7 @@ package object microlcs {
     microActions:         Seq[MicroGenes.Gene[_]],
     iterations:           Int,
     evaluation:           Puzzle,
+    environment:          EnvironmentProvider,
     microMinimize:        Seq[Val[Double]],
     microMaximize:        Seq[Val[Double]]
   //macroMinimize:        Seq[Val[Double]],
@@ -106,13 +108,13 @@ package object microlcs {
 
     val doMatching = Matching(microActions, false)
     val cDoMatching = Capsule(doMatching)
-    val sDoMatching = Slot(cDoMatching)
+    val sDoMatching = Slot(cDoMatching) on environment
 
     val encodeIndividuals = EncodeEntities(microCharacteristics, microActions)
-    val sEncodeIndividuals = Slot(encodeIndividuals)
+    val sEncodeIndividuals = Slot(encodeIndividuals) on environment
 
     val evaluate = Evaluate(microMinimize, microMaximize)
-    val sEvaluate = Slot(evaluate)
+    val sEvaluate = Slot(evaluate) on environment
 
     val subsume = Subsumption(microMinimize, microMaximize)
 
@@ -172,6 +174,7 @@ package object microlcs {
     microActions:         Seq[MicroGenes.Gene[_]],
     iterations:           Int,
     evaluation:           Puzzle,
+    environment:          EnvironmentProvider,
     microMinimize:        Seq[Val[Double]],
     microMaximize:        Seq[Val[Double]],
     macroMinimize:        Seq[Val[Double]],
@@ -186,9 +189,9 @@ package object microlcs {
     //val sDispatchPlansInit = Slot(cDispatchPlans)
     //val sDispatchPlansLoop = Slot(cDispatchPlans)
 
-    val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
+    val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore)) on environment
     val encodeIndividualsPlans = EncodeEntities(microCharacteristics, microActions) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
-    val sEncodeIndividualsPlans = Slot(encodeIndividualsPlans)
+    val sEncodeIndividualsPlans = Slot(encodeIndividualsPlans) on environment
 
     /*val simulationCapsuleMacro = Capsule(MoleTask(evaluation) set (
       (inputs, outputs) += (varPlanSimulated, varIterations, varRules, DecodeEntities.varEntities, DecodeEntities.varMin, DecodeEntities.varMax, varPlansBefore)
@@ -196,7 +199,7 @@ package object microlcs {
     )*/
 
     val evaluatePlan = EvaluateMacro(microMinimize, microMaximize, macroMinimize, macroMaximize)
-    val sEvaluatePlan = Slot(evaluatePlan)
+    val sEvaluatePlan = Slot(evaluatePlan) on environment
 
     val aggregatePlans = AggregateResultsPlan()
 
