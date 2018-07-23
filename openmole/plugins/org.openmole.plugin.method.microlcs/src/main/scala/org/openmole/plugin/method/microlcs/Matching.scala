@@ -18,16 +18,12 @@
 package org.openmole.plugin.method.microlcs
 
 import org.openmole.core.context.{ Context, Namespace, Variable }
-import org.openmole.core.expansion.FromContext
 import org.openmole.core.workflow.builder.DefinitionScope
-import org.openmole.core.workflow.sampling.Sampling
-import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
 import org.openmole.tool.logger.JavaLogger
 import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workflow.dsl._
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workspace.NewFile
-import org.openmole.plugin.method.microlcs.DecodeEntities.{ varMax, varMin }
 import org.openmole.tool.random.RandomProvider
 
 import scala.annotation.tailrec
@@ -38,38 +34,18 @@ object Matching extends JavaLogger {
     ClassifierRule(entity, _actions, context)
   }
 
-  /**
-   * For a given entities, identifies the rules which are applicable and
-   * returns them.
-   */
-  def matchOrCoverIndividual(
-    rules:         Array[ClassifierRule],
-    entity:        Entity,
-    _actions:      Seq[MicroGenes.Gene[_]],
-    context:       Context,
-    deterministic: Boolean)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
-
-    val matched: Array[ClassifierRule] = rules.filter(r ⇒ r.matches(entity))
-    if (matched.length == 1) {
-      matched(0) // TODO
-    }
-    else if (matched.length > 1) {
-      // select the best one ? something else ?
-      //System.out.println("we might match entity " + entity + " with " + matched.length + " rules")
-      //System.out.println(ClassifierRule.toPrettyString(matched.toList))
-      // TODO we select randomly here... what would be the good solution?
-      if (deterministic) {
-        matched(0)
-      }
-      else {
-        matched(rng().nextInt(matched.length))
-      }
+  def applyOneRuleDeterministic(matching: List[ClassifierRule])(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule =
+    if (matching.length == 1) {
+      matching(0)
     }
     else {
-      //System.out.println("covering entity " + entity)
-      covering(entity, _actions, context)
+      val r :: tail = matching
+      if (rng().nextDouble() <= r.proportion) {
+        r
+      }
+      else
+        applyOneRuleDeterministic(tail)
     }
-  }
 
   @tailrec
   def matchOrCoverEntities(
@@ -86,16 +62,23 @@ object Matching extends JavaLogger {
       val matching: Array[ClassifierRule] = rulesAvailable.filter(r ⇒ r.matches(e))
       val (r, createdRule) = {
         if (matching.length == 1) {
+          // only one rule is matching; let's use this one
           (matching(0), false)
         }
         else if (matching.isEmpty) {
-          //System.out.println("covering entity " + entity)
+          // no rule is matching; let's run the covering mechanism
           (covering(e, _actions, context), true)
         }
         else if (deterministic) {
-          (matching(0), false)
+          // there are several rules, which have to be processed deterministically;
+          // let's pick the first one matching
+          // note we take the proportion into account
+          (applyOneRuleDeterministic(matching.toList), false)
         }
         else {
+          // there are several rules matching; and we are not deterministic.
+          // let's pick up a random one
+          // note we ignore the proportion here
           (matching(rng().nextInt(matching.length)), false)
         }
       }

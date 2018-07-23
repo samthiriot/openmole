@@ -24,6 +24,7 @@ import org.openmole.core.workflow.dsl._
 import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
+import org.openmole.tool.random.RandomProvider
 
 /**
  * Takes rules and entities,
@@ -52,10 +53,17 @@ object GenerateInitPlans extends JavaLogger {
     id:                Int,
     rulesSelected:     Array[ClassifierRule],
     rulesAll:          Array[ClassifierRule],
-    entitiesToProcess: List[Entity]): MacroGene = entitiesToProcess match {
+    entitiesToProcess: List[Entity],
+    proportions:       Seq[Double]
+  )(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): MacroGene = entitiesToProcess match {
 
     case Nil ⇒ // end of process
-      MacroGene(id, rulesSelected)
+
+      val rulesWithRandomProportions =
+        rulesSelected.slice(0, rulesSelected.length - 1)
+          .map(ClassifierRule.mutateProportion(_, proportions)) :+ rulesSelected(rulesSelected.length - 1)
+
+      MacroGene(id, rulesWithRandomProportions)
 
     case e :: entities ⇒
       val rulesMatching = rulesAll.filter(r ⇒ r.matches(e))
@@ -91,7 +99,8 @@ object GenerateInitPlans extends JavaLogger {
         id,
         rulesSelected ++ Array(ruleToUse),
         rulesAll,
-        entitiesToProcess.filterNot(ruleToUse.matches(_))
+        entitiesToProcess.filterNot(ruleToUse.matches(_)),
+        proportions
       )
 
   }
@@ -100,20 +109,23 @@ object GenerateInitPlans extends JavaLogger {
    * Takes a given rule, and builds a
    */
   def elaboratePlanAroundARule(
-    id:       Int,
-    rule:     ClassifierRule,
-    rules:    Array[ClassifierRule],
-    entities: Array[Entity]
-  ): MacroGene = elaboratePlan(
+    id:          Int,
+    rule:        ClassifierRule,
+    rules:       Array[ClassifierRule],
+    entities:    Array[Entity],
+    proportions: Seq[Double]
+  )(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): MacroGene = elaboratePlan(
     id,
     Array(rule),
     rules,
-    entities.filter(e ⇒ !rule.matches(e)).toList
+    entities.filter(e ⇒ !rule.matches(e)).toList,
+    proportions
   )
 
   def apply(
     microMinimize: Seq[Val[Double]],
     microMaximize: Seq[Val[Double]],
+    proportions:   Seq[Double],
     maxrules:      Int
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
@@ -153,7 +165,7 @@ object GenerateInitPlans extends JavaLogger {
               sortByNthMicroPerf(i, rulesFiltered)
             ).zipWithIndex
               .map {
-                case (r, j) ⇒ elaboratePlanAroundARule(i * (countPerMicro + 1) + j, r, rulesFiltered.reverse, entities)
+                case (r, j) ⇒ elaboratePlanAroundARule(i * (countPerMicro + 1) + j, r, rulesFiltered.reverse, entities, proportions)(rng, newFile, fileService)
               }
           }.toArray
 

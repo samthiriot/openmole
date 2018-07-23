@@ -38,7 +38,7 @@ object EvolvePlans extends JavaLogger {
       (p.rules zip q.rules).forall {
         case (a, b) ⇒ (
           (a.name == b.name) || (
-            (a.conditions == b.conditions) && (a.actions == b.actions)
+            (a.proportion == b.proportion) && (a.conditions == b.conditions) && (a.actions == b.actions)
           ))
       }
 
@@ -63,7 +63,8 @@ object EvolvePlans extends JavaLogger {
 
   def apply(
     maxrules:     Int,
-    microActions: Seq[MicroGenes.Gene[_]]
+    microActions: Seq[MicroGenes.Gene[_]],
+    proportions:  Seq[Double]
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("EvolvePlans") { (context, rng, _) ⇒
@@ -115,6 +116,7 @@ object EvolvePlans extends JavaLogger {
             microActions,
             mins,
             maxs,
+            proportions,
             context
           )(rng, newFile, fileService)
           else

@@ -26,15 +26,16 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
 
   val id: Int
   val name: String
-  val age: Int
 
   val conditions: Array[Condition[_]]
   val actions: Array[Variable[Q] forSome { type Q }]
+  val proportion: Double
 
   override def toString: String =
     name + ": \t" +
       "if " + conditions.map(c ⇒ c.toString).mkString(" and ") +
       " \tthen set " + actions.map(a ⇒ a.toString).mkString(", ") +
+      (if (proportion == 1.0) "" else " with probability " + proportion + " ") +
       " \t " + performanceToString
 
   def dominatesPareto(other: AbstractClassifier) = {
@@ -86,6 +87,7 @@ case class ClassifierRule(
   conditions:               Array[Condition[_]],
   actions:                  Array[Variable[Q] forSome { type Q }],
   age:                      Int,
+  proportion:               Double,
   override var performance: Seq[Seq[Double]]
 ) extends AbstractClassifier
 
@@ -115,6 +117,7 @@ object ClassifierRule {
       // micro actions are random
       _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context))).toArray, // TODO
       0,
+      1.0,
       Seq()
     )
   }
@@ -155,7 +158,7 @@ object ClassifierRule {
         r.conditions.slice(idxChange + 1, r.conditions.length),
       performance = Seq()
     )
-    System.out.println("=>  " + res)
+    // debug: System.out.println("=>  " + res)
     res
   }
 
@@ -177,13 +180,70 @@ object ClassifierRule {
     )
   }
 
-  def mutate(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+  /**
+   * The proportion is mutate step by step; for instance in potential proportions (0, 0.25, 0.5, 0.75, 1.0),
+   * the mutation of 0.5 will give 0.25 or 0.75 . Returns a copy of the classifier.
+   */
+  def mutateProportion(r: ClassifierRule, proportions: Seq[Double])(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    val rand = rng()
+
+    /*
+    // pick up another random proportion
+    val currentIdx = proportions.indexOf(r.proportion)
+    val novelProportion = if (currentIdx == 0) {
+      // this is the lowest proportion possible; we only can increase
+      proportions(1)
+    }
+    else if (currentIdx + 1 == proportions.length) {
+      // this is the highest proportion possible; we only can decrease
+      proportions(currentIdx - 1)
+    }
+    else if (rand.nextDouble() <= 0.7) {
+      // more chances to decrease them, as they are created hight
+      proportions(currentIdx - 1)
+    }
+    else {
+      proportions(currentIdx + 1)
+    }
+    */
+
+    val potentialProportions = proportions.filterNot(_ == r.proportion)
+    val novelProportion = potentialProportions(rng().nextInt(potentialProportions.length))
+
+    // return a copy of this classifier with a different proportion
+    r.copy(
+      name = getNextName(),
+      proportion = novelProportion,
+      performance = Seq()
+    )
+  }
+
+  /**
+   * Mutates a classifier by changing either its condition or action. The probability of mutating conditions
+   * is (conditions.length / (conditions.length + actions.length)). Returns a copy of the original classifier.
+   */
+  def mutateConditionOrAction(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
     val rand = rng()
     if (rand.nextDouble() <= r.conditions.length.toDouble / (r.conditions.length + r.actions.length)) {
       mutateConditions(r, mins, maxs, context)
     }
     else {
       mutateActions(r, microActions, mins, maxs, context)
+    }
+  }
+
+  /**
+   * Mutates a classifier by changing either its proportion or its conditions; the probability of
+   * mutating conditions is (conditions.length / (conditions.length + 1)).
+   * Returns a copy of the original classifier.
+   */
+  def mutateConditionOrProportion(r: ClassifierRule, mins: Array[Double], maxs: Array[Double], proportions: Seq[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    val rand = rng()
+    if (rand.nextDouble() <= 1.0 / (1 + r.conditions.length)) {
+      mutateProportion(r, proportions)
+    }
+    else {
+      mutateConditions(r, mins, maxs, context)
     }
   }
 

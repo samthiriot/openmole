@@ -71,6 +71,7 @@ object MacroGene extends JavaLogger {
     microActions: Seq[MicroGenes.Gene[_]],
     mins:         Array[Double],
     maxs:         Array[Double],
+    proportions:  Seq[Double],
     context:      Context
   )(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): MacroGene = {
 
@@ -90,9 +91,10 @@ object MacroGene extends JavaLogger {
 
     val rulesMutated = p.rules.slice(0, idxRule) ++
       List(
-        ClassifierRule.mutateConditions(
+        ClassifierRule.mutateConditionOrProportion(
           p.rules(idxRule),
           mins, maxs,
+          proportions,
           context)) ++
         p.rules.slice(idxRule + 1, p.rules.length)
 

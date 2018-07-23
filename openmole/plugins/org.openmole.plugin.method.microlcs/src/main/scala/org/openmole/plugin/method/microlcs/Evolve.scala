@@ -92,8 +92,8 @@ object Evolve extends JavaLogger {
           .map { case (a: ClassifierRule, b: ClassifierRule) ⇒ ClassifierRule.crossoverSinglePoint(a, b)(rng) }
           .flatMap {
             case (c: ClassifierRule, d: ClassifierRule) ⇒ List(
-              ClassifierRule.mutate(c, microActions, mins, maxs, context)(rng, newFile, fileService),
-              ClassifierRule.mutate(d, microActions, mins, maxs, context)(rng, newFile, fileService))
+              ClassifierRule.mutateConditionOrAction(c, microActions, mins, maxs, context)(rng, newFile, fileService),
+              ClassifierRule.mutateConditionOrAction(d, microActions, mins, maxs, context)(rng, newFile, fileService))
           }
           .toArray
 

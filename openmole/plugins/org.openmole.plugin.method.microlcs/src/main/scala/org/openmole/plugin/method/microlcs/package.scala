@@ -178,32 +178,25 @@ package object microlcs {
     microMinimize:        Seq[Val[Double]],
     microMaximize:        Seq[Val[Double]],
     macroMinimize:        Seq[Val[Double]],
-    macroMaximize:        Seq[Val[Double]]
+    macroMaximize:        Seq[Val[Double]],
+    proportions:          Seq[Double]             = Seq(0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
-    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, 500)
+    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, proportions, 500)
     val generateInitPlansSlot = Slot(generateInitPlans)
 
     val dispatchPlans = ExplorationTask(SamplePlans())
-    //val cDispatchPlans = Capsule(dispatchPlans)
-    //val sDispatchPlansInit = Slot(cDispatchPlans)
-    //val sDispatchPlansLoop = Slot(cDispatchPlans)
 
     val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore)) on environment
     val encodeIndividualsPlans = EncodeEntities(microCharacteristics, microActions) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
     val sEncodeIndividualsPlans = Slot(encodeIndividualsPlans) on environment
-
-    /*val simulationCapsuleMacro = Capsule(MoleTask(evaluation) set (
-      (inputs, outputs) += (varPlanSimulated, varIterations, varRules, DecodeEntities.varEntities, DecodeEntities.varMin, DecodeEntities.varMax, varPlansBefore)
-    )
-    )*/
 
     val evaluatePlan = EvaluateMacro(microMinimize, microMaximize, macroMinimize, macroMaximize)
     val sEvaluatePlan = Slot(evaluatePlan) on environment
 
     val aggregatePlans = AggregateResultsPlan()
 
-    val evolvePlans = EvolvePlans(100, microActions)
+    val evolvePlans = EvolvePlans(100, microActions, proportions)
     val sEvolvePlans = Slot(evolvePlans)
 
     val beginLoop = Capsule(EmptyTask() set (name := "begin loop"), strain = true)

@@ -66,8 +66,8 @@ object EvaluateMacro extends JavaLogger {
         plan
       }
       else {
-        System.out.println("some rules where not used: " + plan)
-        System.out.println("rules used: " + rulesUsedUnique.map(_.name).mkString(","))
+        System.out.println("the rules " + plan.rules.filterNot(rulesUsedUnique).map(_.name).mkString(",") +
+          " of plan " + plan.name + " where not used, let's remove them")
         plan.copy(
           rules = plan.rules.filter(rulesUsedUnique)
         )
