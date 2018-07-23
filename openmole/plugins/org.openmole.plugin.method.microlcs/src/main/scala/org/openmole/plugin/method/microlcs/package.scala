@@ -76,6 +76,8 @@ package object microlcs {
 
   type MicroCharacteristics = Seq[MicroCharacteristic]
 
+  // TODO MacroLCS
+
   /**
    * Entry point for the method: applies MicroLCS
    * with a list of input characteristics for entities,
@@ -88,15 +90,15 @@ package object microlcs {
     iterations:           Int,
     evaluation:           Puzzle,
     microMinimize:        Seq[Val[Double]],
-    microMaximize:        Seq[Val[Double]],
-    macroMinimize:        Seq[Val[Double]],
-    macroMaximize:        Seq[Val[Double]]
+    microMaximize:        Seq[Val[Double]]
+  //macroMinimize:        Seq[Val[Double]],
+  //macroMaximize:        Seq[Val[Double]]
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
     //
     // rng: RandomProvider,
 
-    val simulationCapsuleMicro = evaluation // Capsule(MoleTask(evaluation))
+    val simulation = evaluation // Capsule(MoleTask(evaluation))
 
     // the first step is to decode the initial lists of characteristics as lists of individuals.
     val decodeIndividuals = DecodeEntities(microCharacteristics, microActions)
@@ -137,64 +139,84 @@ package object microlcs {
     val beginLoopExecLoop = Slot(beginLoopCapsule)
 
     val export = ExportRules(microCharacteristics, microActions, microMinimize, microMaximize)
+    val exportSlot = Slot(export)
+
+    val last = EmptyTask() set (
+      name := "last" //,
+    //(inputs, outputs) += (t.populationPrototype, t.statePrototype)
+    )
+    val lastCapsule = Capsule(last, strain = true)
+
+    (
+      (sDecodeIndividuals -- beginLoopExecInit -- dispatch
+        -< (sDoMatching -- sEncodeIndividuals -- simulation -- sEvaluate) >-
+        aggregate -- subsume -- sEvolve -- sDelete) &
+        // convey rules, iteration, micro entities and other information over the evaluation
+        (sEncodeIndividuals -- sEvaluate) &
+        // loop
+        (sDelete -- (beginLoopExecLoop when "microlcs$iterations < " + iterations)) &
+        // last step: run exportation
+        (sDelete -- (exportSlot when "microlcs$iterations == " + iterations))
+    ) -- (lastCapsule when "microlcs$iterations == " + iterations)
+
+  }
+
+  /**
+   * Entry point for the method: applies MicroLCS
+   * with a list of input characteristics for entities,
+   * actions to tune for each entity, and
+   * a count of iterations to drive.
+   */
+  def DiscoverPlansLCS(
+    microCharacteristics: MicroCharacteristics, // Seq[Val[Array[T]] forSome { type T }],
+    microActions:         Seq[MicroGenes.Gene[_]],
+    iterations:           Int,
+    evaluation:           Puzzle,
+    microMinimize:        Seq[Val[Double]],
+    microMaximize:        Seq[Val[Double]],
+    macroMinimize:        Seq[Val[Double]],
+    macroMaximize:        Seq[Val[Double]]
+  )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
     val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, 500)
     val generateInitPlansSlot = Slot(generateInitPlans)
 
     val dispatchPlans = ExplorationTask(SamplePlans())
-    val cDispatchPlans = Capsule(dispatchPlans)
-    val sDispatchPlansInit = Slot(cDispatchPlans)
-    val sDispatchPlansLoop = Slot(cDispatchPlans)
+    //val cDispatchPlans = Capsule(dispatchPlans)
+    //val sDispatchPlansInit = Slot(cDispatchPlans)
+    //val sDispatchPlansLoop = Slot(cDispatchPlans)
 
     val matchingPlans = Matching(microActions, true) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
     val encodeIndividualsPlans = EncodeEntities(microCharacteristics, microActions) set ((inputs, outputs) += (varPlanSimulated, varPlansBefore))
-    val simulationMacro = evaluation.copy()
-    val simulationCapsuleMacro = Capsule(MoleTask(evaluation) set (
+    val sEncodeIndividualsPlans = Slot(encodeIndividualsPlans)
+
+    /*val simulationCapsuleMacro = Capsule(MoleTask(evaluation) set (
       (inputs, outputs) += (varPlanSimulated, varIterations, varRules, DecodeEntities.varEntities, DecodeEntities.varMin, DecodeEntities.varMax, varPlansBefore)
     )
-    )
+    )*/
 
     val evaluatePlan = EvaluateMacro(microMinimize, microMaximize, macroMinimize, macroMaximize)
+    val sEvaluatePlan = Slot(evaluatePlan)
 
     val aggregatePlans = AggregateResultsPlan()
 
     val evolvePlans = EvolvePlans(100, microActions)
     val sEvolvePlans = Slot(evolvePlans)
 
+    val beginLoop = Capsule(EmptyTask() set (name := "begin loop"), strain = true)
+    val beginLoopInit = Slot(beginLoop)
+    val beginLoopRepeat = Slot(beginLoop)
+
     (
-
-      (
-        sDecodeIndividuals -- beginLoopExecInit -- dispatch
-        -< (sDoMatching -- sEncodeIndividuals -- simulationCapsuleMicro -- sEvaluate) >-
-        aggregate -- subsume -- sEvolve -- sDelete
-      ) & // convey rules, iteration, micro entities and other information over the evaluation
-        (sEncodeIndividuals -- sEvaluate) &
-        // loop
-        (sDelete -- (beginLoopExecLoop when "microlcs$iterations < " + iterations)) &
-        // continue
-        (sDelete -- (generateInitPlansSlot when "microlcs$iterations == " + iterations)) &
-        (generateInitPlansSlot -- sDispatchPlansInit -< matchingPlans -- encodeIndividualsPlans -- simulationCapsuleMacro -- evaluatePlan >- aggregatePlans -- sEvolvePlans) &
-        (sEvolvePlans -- (sDispatchPlansLoop when "microlcs$iterations < " + (iterations * 2)))
-
-    // propagate varPlansBefore
-    // & (sDispatchPlansInit -- sEvolvePlans)
+      (generateInitPlansSlot -- beginLoopInit -- dispatchPlans
+        -< (matchingPlans -- sEncodeIndividualsPlans -- evaluation -- sEvaluatePlan) >-
+        aggregatePlans -- sEvolvePlans) &
+        // pass data over the simulation of macro plans
+        (sEncodeIndividualsPlans -- sEvaluatePlan) &
+        // loop for the evolution of macro plans
+        (sEvolvePlans -- (beginLoopRepeat when "microlcs$iterations < " + iterations))
 
     ) // TODO !!! -- export
-    //-- evaluation
-
-    // TODO varPlansBefore
-
-    /*
-    (
-      (sDecodeIndividuals -- sDoMatching -- sEncodeIndividuals -- evaluation -- sEvaluate -- subsume -- sEvolve -- sDelete) &
-
-      // convey rules, iteration, micro entities and other information over the evaluation
-      (sEncodeIndividuals -- sEvaluate) &
-
-      // loop
-      (sDelete -- (sDoMatchingLoop when "microlcs$iterations < " + iterations))
-
-    )*/
 
   }
 

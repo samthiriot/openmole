@@ -69,6 +69,15 @@ trait HasMultiObjectivePerformance {
     else "(" + performance(0).length + ") [" + performanceAggregated().map(v ⇒ v.toString).mkString(",") + "]"
   }
 
+  def absorb[T <: HasMultiObjectivePerformance](other: T): T = {
+
+    // integrate the performance of the other
+    performance = performance.zipWithIndex.map { case (p, i) ⇒ p ++ other.performance(i) }
+
+    this.asInstanceOf[T]
+
+  }
+
 }
 
 object HasMultiObjectivePerformance {

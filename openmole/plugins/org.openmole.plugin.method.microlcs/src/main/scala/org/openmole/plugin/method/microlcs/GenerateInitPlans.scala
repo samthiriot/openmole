@@ -121,7 +121,6 @@ object GenerateInitPlans extends JavaLogger {
 
       // retrieve the inputs
       // ... the current iteration
-      val iteration: Int = context(varIterations)
 
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
@@ -165,7 +164,7 @@ object GenerateInitPlans extends JavaLogger {
       List(
         Variable(varRules, rulesFiltered),
         Variable(varPlans, plans),
-        Variable(varIterations, iteration + 1),
+        Variable(varIterations, 1),
         Variable(varPlansBefore, Array[MacroGene]())
       )
 
@@ -177,7 +176,7 @@ object GenerateInitPlans extends JavaLogger {
       // we provide as outputs
       //outputs += DecodeEntities.varEntities,
       // ... the rules we updates with the novel information
-      (inputs, outputs) += varIterations,
+      outputs += varIterations,
       (inputs, outputs) += DecodeEntities.varEntities,
       outputs += varPlans,
       outputs += varRules,
@@ -186,13 +185,6 @@ object GenerateInitPlans extends JavaLogger {
       (inputs, outputs) += DecodeEntities.varMin,
       (inputs, outputs) += DecodeEntities.varMax
 
-    /*
-      rIterations,
-    DecodeEntities.varEntities,
-    varPlans,
-    varRules,
-    DecodeEntities.varMin, DecodeEntities.varMax
-       */
     )
 
   }

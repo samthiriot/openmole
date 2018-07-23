@@ -62,13 +62,6 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
    */
   def actUpon(entity: Entity): Entity = entity.copy(actions = actions.map(av ⇒ av).toArray) // TODO clone ???
 
-  def absorb(other: ClassifierRule) = {
-
-    // integrate the performance of the other
-    performance = performance.zipWithIndex.map { case (p, i) ⇒ p ++ other.performance(i) }
-
-  }
-
   /**
    * Returns an integer index of generality; the higher the more general.
    *
@@ -151,26 +144,29 @@ object ClassifierRule {
     )
   }
 
-  def mutateCondition(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+  def mutateConditions(r: ClassifierRule, mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
     val rand = rng()
     val idxChange = rand.nextInt(r.conditions.length)
-    r.copy(
+    // debug : System.out.println("mutating condition " + idxChange + " in " + r)
+    val res = r.copy(
       name = getNextName(),
-      conditions = r.conditions.slice(0, idxChange - 1) ++
+      conditions = r.conditions.slice(0, idxChange) ++
         Array(Condition.mutate(r.conditions(idxChange), mins(idxChange), maxs(idxChange))) ++
         r.conditions.slice(idxChange + 1, r.conditions.length),
       performance = Seq()
     )
+    System.out.println("=>  " + res)
+    res
   }
 
-  def mutateAction(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+  def mutateActions(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
     // change actions
     val rand = rng()
     val idxChange = rand.nextInt(r.actions.length)
     r.copy(
       name = getNextName(),
       actions =
-        r.actions.slice(0, idxChange - 1) ++
+        r.actions.slice(0, idxChange) ++
           Array(
             Variable.unsecure(
               microActions(idxChange).prototype,
@@ -184,10 +180,10 @@ object ClassifierRule {
   def mutate(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
     val rand = rng()
     if (rand.nextDouble() <= r.conditions.length.toDouble / (r.conditions.length + r.actions.length)) {
-      mutateCondition(r, microActions, mins, maxs, context)
+      mutateConditions(r, mins, maxs, context)
     }
     else {
-      mutateAction(r, microActions, mins, maxs, context)
+      mutateActions(r, microActions, mins, maxs, context)
     }
   }
 

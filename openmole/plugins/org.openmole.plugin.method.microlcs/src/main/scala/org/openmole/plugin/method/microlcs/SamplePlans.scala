@@ -73,7 +73,7 @@ sealed class SamplePlans() extends Sampling {
     // TODO to be removed
     val previousPlans: Array[MacroGene] = context(varPlansBefore)
 
-    System.out.println("dispatching the " + plans.length + " plans for evaluation")
+    System.out.println("Iteration " + iteration + ": dispatching the " + plans.length + " plans for evaluation")
 
     List(
       // just duplicate the same information for every run

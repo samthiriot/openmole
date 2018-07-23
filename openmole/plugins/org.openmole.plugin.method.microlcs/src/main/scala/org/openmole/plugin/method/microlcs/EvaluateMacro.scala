@@ -25,6 +25,8 @@ import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
 
+import scala.annotation.tailrec
+
 /**
  * Receives the results of simulations and the rules.
  * In charge of assessing how good those rules were.
@@ -61,13 +63,14 @@ object EvaluateMacro extends JavaLogger {
 
       // update the plan: if a rule was not used in the plan, we simplify the plan
       val planUpdated: MacroGene = if (plan.rules.filterNot(rulesUsedUnique).isEmpty) {
+        plan
+      }
+      else {
         System.out.println("some rules where not used: " + plan)
+        System.out.println("rules used: " + rulesUsedUnique.map(_.name).mkString(","))
         plan.copy(
           rules = plan.rules.filter(rulesUsedUnique)
         )
-      }
-      else {
-        plan
       }
 
       //System.out.println("evaluating the result of the test of plan: " + plan)

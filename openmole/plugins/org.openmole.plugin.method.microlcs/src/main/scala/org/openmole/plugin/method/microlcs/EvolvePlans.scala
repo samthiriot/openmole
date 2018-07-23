@@ -26,10 +26,40 @@ import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
 import org.openmole.tool.random.RandomProvider
 
+import scala.annotation.tailrec
+
 /**
  * ensures we only keep a given maximum of rules
  */
 object EvolvePlans extends JavaLogger {
+
+  def rulesEquivalent(p: MacroGene, q: MacroGene): Boolean =
+    p.rules.length == q.rules.length &&
+      (p.rules zip q.rules).forall {
+        case (a, b) ⇒ (
+          (a.name == b.name) || (
+            (a.conditions == b.conditions) && (a.actions == b.actions)
+          ))
+      }
+
+  @tailrec
+  def groupSimilar(plans: List[MacroGene], acc: List[MacroGene] = List()): List[MacroGene] = plans match {
+    case Nil ⇒ acc
+    case p :: tail ⇒
+      val doublesFromTail = tail.filter(rulesEquivalent(p, _))
+      if (!doublesFromTail.isEmpty) {
+        System.out.println("found " + doublesFromTail.length + " doubles for plan\n" + p)
+      }
+      val pUpdated = (List(p) ++ doublesFromTail).reduceLeft(_.absorb(_))
+      if (!doublesFromTail.isEmpty) {
+        System.out.println("p updated =>\n" + pUpdated)
+      }
+      val tailUpdated = tail diff doublesFromTail
+      if (!doublesFromTail.isEmpty) {
+        System.out.println("tail from " + tail.length + " to " + tailUpdated.length)
+      }
+      groupSimilar(tailUpdated, acc ++ List(pUpdated))
+  }
 
   def apply(
     maxrules:     Int,
@@ -50,25 +80,34 @@ object EvolvePlans extends JavaLogger {
 
       //System.out.println("Iteration " + iteration + " Here are the " + plans.length + " plans after evaluation:\n" + MacroGene.toPrettyString(plans))
 
+      val plansUnique = groupSimilar(plans.toList)
+
       // elitism: we conserve the best of the previous as well !
-      val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plans ++ plansBefore)
+      val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plansUnique)
 
       //System.out.println("Pareto optimal plans:\n" + MacroGene.toPrettyString(bestPlans.toList.sortWith(_.performanceAggregated(0) < _.performanceAggregated(0))))
 
-      val plansRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(plans)
+      val parents = plans.toList ++ plansBefore
 
-      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(plansRankedPareto))
+      val parentsUnique = groupSimilar(parents)
+
+      val parentsRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(parentsUnique.toArray)
+
+      System.out.println("we have: " + parents.length + " parents, then " + parentsUnique.length + " unique parents", "evaluating over " + parentsRankedPareto.length + " Pareto fronts")
+
+      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
-      val parents: Iterable[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, plansRankedPareto.toList)(rng)
+      val parentsSelected: Iterable[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, parentsRankedPareto.toList)(rng)
 
       // we can do crossover between rules which are of similar size
+      // TODO crossover
 
       val mins: Array[Double] = context(DecodeEntities.varMin)
       val maxs: Array[Double] = context(DecodeEntities.varMax)
 
       // mutate !
-      val plansMutated = parents.map(
+      val plansMutated = parentsSelected.map(
         p ⇒
           if (p.rules.length > 1)
             MacroGene.mutate(
@@ -84,7 +123,7 @@ object EvolvePlans extends JavaLogger {
 
       List(
         Variable(varPlans, plansMutated),
-        Variable(varPlansBefore, plans)
+        Variable(varPlansBefore, bestPlans.toArray)
       )
 
     } set (

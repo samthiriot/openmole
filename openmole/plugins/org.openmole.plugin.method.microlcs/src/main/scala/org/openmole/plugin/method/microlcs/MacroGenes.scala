@@ -88,11 +88,10 @@ object MacroGene extends JavaLogger {
     // select the rule we will mutate
     val idxRule: Int = rand.nextInt(p.rules.length - 1)
 
-    val rulesMutated = p.rules.slice(0, idxRule - 1) ++
+    val rulesMutated = p.rules.slice(0, idxRule) ++
       List(
-        ClassifierRule.mutateCondition(
+        ClassifierRule.mutateConditions(
           p.rules(idxRule),
-          microActions,
           mins, maxs,
           context)) ++
         p.rules.slice(idxRule + 1, p.rules.length)
