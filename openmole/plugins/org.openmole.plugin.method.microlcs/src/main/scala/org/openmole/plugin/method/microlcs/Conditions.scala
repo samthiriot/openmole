@@ -41,6 +41,50 @@ abstract class ConditionOneValue[T] extends Condition[T] {
   def refValue: T
 }
 
+abstract class ConditionInSet[T](val matchingValues: Set[T]) extends Condition[T] {
+  //val matchingValues: Set[T]
+
+  def isWildCard: Boolean = matchingValues.isEmpty
+
+  override def toString(): String = attributeName + {
+
+    if (matchingValues.isEmpty) {
+      " = #"
+    }
+    else if (matchingValues.size == 1) {
+      " = " + matchingValues.head
+    }
+    else {
+      "id in {" + matchingValues.map(_.toString).mkString(",") + "}"
+    }
+  }
+
+}
+
+/**
+ * The condition macthing the Id of an entity.
+ * It matches a set of id. If the set is empty, then everything is matched.
+ * If the set contains values, only the entities having the ids of the set are matched.
+ */
+class ConditionId(matchingValues: Set[Int]) extends ConditionInSet[Int](matchingValues) {
+
+  def this(id: Int) = this(Set(id))
+  def this() = this(Set[Int]())
+
+  override def attributeName: String = "id"
+
+  override def matches(v: Int): Boolean = matchingValues.isEmpty || matchingValues.contains(v)
+
+  override def subsums(other: Condition[Int]): Boolean = other match {
+    case oo: ConditionId ⇒ matchingValues.isEmpty || (!oo.matchingValues.isEmpty && oo.matchingValues.subsetOf(matchingValues))
+    case _               ⇒ false // TODO warn ???
+  }
+
+  // TODO is that relevant ???
+  override def generalityIndice = if (matchingValues.isEmpty) 2 else if (matchingValues.size == 1) 0 else 1
+
+}
+
 abstract class WildCard[T] extends Condition[T] {
   override def matches(v: T): Boolean = true
   override def toString(): String = { attributeName + "==#" }
@@ -113,6 +157,20 @@ object Condition {
     case _              ⇒ throw new IllegalArgumentException("Sorry, unable to create a condition for value " + v.value)
   }
 
+  // TODO receive maxid and initialize rules with the capture of many entities ?
+  /**
+   * Creates a random condition on id matching a given individual; will either
+   * generate a wildcard on id, or a condition matching exactly this entity
+   */
+  def createIdCondition(id: Int, rng: scala.util.Random): ConditionId = {
+    if (rng.nextDouble() < 0.5) {
+      new ConditionId()
+    }
+    else {
+      new ConditionId(id)
+    }
+  }
+
   def createIntegerCondition(v: Variable[Int], rng: scala.util.Random): Condition[Int] = {
     val r: Int = rng.nextInt(100)
     if (r <= 25) { LowerThanIntCondition(v.prototype.simpleName, v.value + 1) }
@@ -135,7 +193,46 @@ object Condition {
     else { WildCardBoolCondition(v.prototype.simpleName) }
   }
 
-  // TODO String
+  // TODO create and mutate String
+
+  def integersBefore(maxId: Int, rng: scala.util.Random): Set[Int] = {
+    val count = rng.nextInt(maxId)
+    rng.shuffle((0 until maxId).toList).take(count).toSet
+  }
+
+  def mutateId(c: ConditionId, maxId: Int, rng: scala.util.Random): ConditionId = {
+    if (c.matchingValues.isEmpty) {
+      // there was no value; let's match a random one !
+      new ConditionId(rng.nextInt(maxId))
+      //new ConditionId(integersBefore(maxId, rng))
+    }
+    else {
+      val rd = rng.nextDouble()
+      // there were ids
+      // we might change of id
+      if (rd <= 0.8) {
+        // we might remove one id over 2
+        new ConditionId(rng.nextInt(maxId))
+      }
+      else {
+        // we might switch to wildcard ?
+        new ConditionId()
+      }
+      /*
+      if (rd <= 0.3) {
+        // we might remove one id over 2
+        new ConditionId(c.matchingValues.filter(_ ⇒ rng.nextDouble() <= 0.5))
+      }
+      else if (rd <= 0.6) {
+        // we might add some ids ?
+        new ConditionId(c.matchingValues ++ integersBefore(maxId, rng))
+      }
+      else {
+        // we might switch to wildcard ?
+        new ConditionId()
+      }*/
+    }
+  }
 
   def mutateInt(c: Condition[Int], min: Int, max: Int, rng: scala.util.Random): Condition[Int] = {
 

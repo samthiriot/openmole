@@ -118,16 +118,16 @@ package object microlcs {
 
     val subsume = Subsumption(microMinimize, microMaximize)
 
-    val evolve = Evolve(microActions, microCharacteristics, 100)
+    val evolve = Evolve(microActions, microCharacteristics, 200)
     val sEvolve = Slot(evolve)
 
-    val delete = Delete(200)
+    val delete = Delete(400)
     val cDelete = Capsule(delete)
     val sDelete = Slot(cDelete)
 
     //val sDoMatchingLoop = Slot(cDoMatching)
 
-    val dispatch = ExplorationTask(DispatchEntities(10))
+    val dispatch = ExplorationTask(DispatchEntities(16))
 
     val aggregate = AggregateResults()
 

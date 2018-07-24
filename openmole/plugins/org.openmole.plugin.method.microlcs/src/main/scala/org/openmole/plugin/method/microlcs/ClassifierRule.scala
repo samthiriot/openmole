@@ -27,13 +27,14 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
   val id: Int
   val name: String
 
+  val conditionId: ConditionId
   val conditions: Array[Condition[_]]
   val actions: Array[Variable[Q] forSome { type Q }]
   val proportion: Double
 
   override def toString: String =
     name + ": \t" +
-      "if " + conditions.map(c ⇒ c.toString).mkString(" and ") +
+      "if " + conditionId.toString() + " and " + conditions.map(c ⇒ c.toString).mkString(" and ") +
       " \tthen set " + actions.map(a ⇒ a.toString).mkString(", ") +
       (if (proportion == 1.0) "" else " with probability " + proportion + " ") +
       " \t " + performanceToString
@@ -45,17 +46,17 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
     zipped.forall { case (m, o) ⇒ m <= o } && zipped.exists { case (m, o) ⇒ m < o }
   }
 
-  def subsums(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.subsumsUnsafe(other.conditions(i)) }
+  def subsums(other: AbstractClassifier) = conditionId.subsums(other.conditionId) && conditions.zipWithIndex.forall { case (c, i) ⇒ c.subsumsUnsafe(other.conditions(i)) }
 
   def sameActions(other: AbstractClassifier) = actions.zipWithIndex.forall { case (a, i) ⇒ a.value == other.actions(i).value }
   def similarPerformance(other: AbstractClassifier, epsilons: Array[Double]) = (performanceAggregated() zip other.performanceAggregated() zip epsilons).forall { case ((p1, p2), epsilon) ⇒ Math.abs(p1 - p2) < epsilon }
 
-  def sameConditions(other: AbstractClassifier) = conditions.zipWithIndex.forall { case (c, i) ⇒ c.equals(other.conditions(i)) }
+  def sameConditions(other: AbstractClassifier) = conditionId.matchingValues == other.conditionId.matchingValues && conditions.zipWithIndex.forall { case (c, i) ⇒ c.equals(other.conditions(i)) }
 
   /**
    * Returns true if the conditions of the classifier are verified by the entity passed as a parameter
    */
-  def matches(entity: Entity): Boolean = conditions.zipWithIndex.forall { case (c, i) ⇒ c.acceptsUnsafe(entity.characteristics(i)) } // matches .value
+  def matches(entity: Entity): Boolean = conditionId.matches(entity.id) && conditions.zipWithIndex.forall { case (c, i) ⇒ c.acceptsUnsafe(entity.characteristics(i)) } // matches .value
 
   /**
    * Applies the action of the classifier over this entity.
@@ -67,7 +68,7 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
    * Returns an integer index of generality; the higher the more general.
    *
    */
-  def generalityIndice(): Int = conditions.map(_.generalityIndice).sum
+  def generalityIndice(): Int = conditionId.generalityIndice + conditions.map(_.generalityIndice).sum
 
   def distanceAction(a1: Any, a2: Any): Double = (a1, a2) match {
     case (i1: Integer, i2: Integer) ⇒ Math.abs(i2 - i1)
@@ -84,9 +85,9 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
 case class ClassifierRule(
   id:                       Int,
   name:                     String,
+  conditionId:              ConditionId,
   conditions:               Array[Condition[_]],
   actions:                  Array[Variable[Q] forSome { type Q }],
-  age:                      Int,
   proportion:               Double,
   override var performance: Seq[Seq[Double]]
 ) extends AbstractClassifier
@@ -112,12 +113,15 @@ object ClassifierRule {
       ClassifierRule.lastId,
       // generate an alphanumeric string
       getNextName(),
+      // create a random condition for id
+      Condition.createIdCondition(e.id, rng()),
       // generate random conditions matching entity characteristics
       e.characteristics.map(c ⇒ Condition(c, rng())).toArray,
       // micro actions are random
       _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context))).toArray, // TODO
-      0,
+      // initially a rule always match everything
       1.0,
+      // at the beginning we don't know its performance
       Seq()
     )
   }
@@ -218,13 +222,41 @@ object ClassifierRule {
     )
   }
 
+  def mutateId(r: ClassifierRule, maxId: Int)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    val novelConditionId = Condition.mutateId(r.conditionId, maxId, rng())
+    // TODO risk of loosing a large amount of time generating rules which cannot be applied !
+    r.copy(
+      name = getNextName(),
+      conditionId = novelConditionId,
+      performance = Seq()
+    )
+  }
+
   /**
    * Mutates a classifier by changing either its condition or action. The probability of mutating conditions
    * is (conditions.length / (conditions.length + actions.length)). Returns a copy of the original classifier.
    */
-  def mutateConditionOrAction(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
-    val rand = rng()
-    if (rand.nextDouble() <= r.conditions.length.toDouble / (r.conditions.length + r.actions.length)) {
+  def mutateConditionOrAction(r: ClassifierRule, microActions: Seq[MicroGenes.Gene[_]], mins: Array[Double], maxs: Array[Double], maxId: Int, context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+
+    /*
+    if (r.conditionId.isWildCard) {
+      // this condition applies to no specific entity
+      // what happens if we apply it to specific entities which have these characteristics of interest ?
+
+    } else {
+      // this condition applies to a specific entity
+      // let's try to change it into a condition matching the very characteristics of this entity
+      // to see if we can generalize it ?
+
+    }
+    */
+    
+    val randd = rng().nextDouble()
+    val denum = (1 + r.conditions.length + r.actions.length)
+    if (randd <= 1.0 / denum) {
+      mutateId(r, maxId)
+    }
+    else if (randd <= (1.0 + r.conditions.length.toDouble) / denum) {
       mutateConditions(r, mins, maxs, context)
     }
     else {
@@ -237,10 +269,12 @@ object ClassifierRule {
    * mutating conditions is (conditions.length / (conditions.length + 1)).
    * Returns a copy of the original classifier.
    */
-  def mutateConditionOrProportion(r: ClassifierRule, mins: Array[Double], maxs: Array[Double], proportions: Seq[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
-    val rand = rng()
-    if (rand.nextDouble() <= 1.0 / (1 + r.conditions.length)) {
-      mutateProportion(r, proportions)
+  def mutateConditionOrProportion(r: ClassifierRule, mins: Array[Double], maxs: Array[Double], maxId: Int, proportions: Seq[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
+    val randd = rng().nextDouble()
+
+    if (randd <= 1.0 / (1 + r.conditions.length)) {
+      mutateId(r, maxId)
+      //mutateProportion(r, proportions)
     }
     else {
       mutateConditions(r, mins, maxs, context)

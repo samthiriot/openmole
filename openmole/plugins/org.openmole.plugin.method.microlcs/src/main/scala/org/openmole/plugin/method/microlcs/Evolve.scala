@@ -79,6 +79,7 @@ object Evolve extends JavaLogger {
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
       val iteration: Int = context(varIterations)
+      val countEntities: Int = context(DecodeEntities.varEntities).length
 
       // TODO val tournamentSize =
 
@@ -92,8 +93,8 @@ object Evolve extends JavaLogger {
           .map { case (a: ClassifierRule, b: ClassifierRule) ⇒ ClassifierRule.crossoverSinglePoint(a, b)(rng) }
           .flatMap {
             case (c: ClassifierRule, d: ClassifierRule) ⇒ List(
-              ClassifierRule.mutateConditionOrAction(c, microActions, mins, maxs, context)(rng, newFile, fileService),
-              ClassifierRule.mutateConditionOrAction(d, microActions, mins, maxs, context)(rng, newFile, fileService))
+              ClassifierRule.mutateConditionOrAction(c, microActions, mins, maxs, countEntities, context)(rng, newFile, fileService),
+              ClassifierRule.mutateConditionOrAction(d, microActions, mins, maxs, countEntities, context)(rng, newFile, fileService))
           }
           .toArray
 

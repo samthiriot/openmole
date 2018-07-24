@@ -73,6 +73,8 @@ object EvolvePlans extends JavaLogger {
       // ... the current iteration
       val iteration: Int = context(varIterations)
 
+      val countEntities: Int = context(DecodeEntities.varEntities).length
+
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
 
@@ -116,6 +118,7 @@ object EvolvePlans extends JavaLogger {
             microActions,
             mins,
             maxs,
+            countEntities,
             proportions,
             context
           )(rng, newFile, fileService)
