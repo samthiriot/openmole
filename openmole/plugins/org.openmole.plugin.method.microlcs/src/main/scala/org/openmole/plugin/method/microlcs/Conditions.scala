@@ -35,6 +35,7 @@ trait Condition[T] {
     case _                         ⇒ throw new IllegalArgumentException("Can only compare similar conditions")
   }
   def generalityIndice: Int
+
 }
 
 abstract class ConditionOneValue[T] extends Condition[T] {
@@ -66,6 +67,7 @@ abstract class ConditionInSet[T](val matchingValues: Set[T]) extends Condition[T
  * It matches a set of id. If the set is empty, then everything is matched.
  * If the set contains values, only the entities having the ids of the set are matched.
  */
+/*
 class ConditionId(matchingValues: Set[Int]) extends ConditionInSet[Int](matchingValues) {
 
   def this(id: Int) = this(Set(id))
@@ -84,6 +86,7 @@ class ConditionId(matchingValues: Set[Int]) extends ConditionInSet[Int](matching
   override def generalityIndice = if (matchingValues.isEmpty) 2 else if (matchingValues.size == 1) 0 else 1
 
 }
+*/
 
 abstract class WildCard[T] extends Condition[T] {
   override def matches(v: T): Boolean = true
@@ -158,10 +161,11 @@ object Condition {
   }
 
   // TODO receive maxid and initialize rules with the capture of many entities ?
-  /**
+  /*
    * Creates a random condition on id matching a given individual; will either
    * generate a wildcard on id, or a condition matching exactly this entity
    */
+  /*
   def createIdCondition(id: Int, rng: scala.util.Random): ConditionId = {
     if (rng.nextDouble() < 0.5) {
       new ConditionId()
@@ -170,6 +174,7 @@ object Condition {
       new ConditionId(id)
     }
   }
+  */
 
   def createIntegerCondition(v: Variable[Int], rng: scala.util.Random): Condition[Int] = {
     val r: Int = rng.nextInt(100)
@@ -200,6 +205,7 @@ object Condition {
     rng.shuffle((0 until maxId).toList).take(count).toSet
   }
 
+  /*
   def mutateId(c: ConditionId, maxId: Int, rng: scala.util.Random): ConditionId = {
     if (c.matchingValues.isEmpty) {
       // there was no value; let's match a random one !
@@ -233,12 +239,13 @@ object Condition {
       }*/
     }
   }
+  */
 
   def mutateInt(c: Condition[Int], min: Int, max: Int, rng: scala.util.Random): Condition[Int] = {
 
     val refVal = c match {
       case ov: ConditionOneValue[Int] ⇒ ov.refValue
-      case _                          ⇒ min + rng.nextInt(max - min) // TODO what is a good value ???
+      case _                          ⇒ min + 1 + rng.nextInt(max - min - 2) // TODO what is a good value ???
     }
     val refName = c.attributeName
 
@@ -299,6 +306,32 @@ object Condition {
     case LowerThanFloatCondition(_, _) | GreaterThanFloatCondition(_, _) | EqualToFloatCondition(_, _) | WildCardFloatCondition(_) ⇒ mutateDouble(c.asInstanceOf[Condition[Double]], min, max, rng())
     case EqualToBoolCondition(_, _) | WildCardBoolCondition(_) ⇒ mutateBoolean(c.asInstanceOf[Condition[Boolean]], rng())
     case _ ⇒ throw new IllegalArgumentException("oops, we are not able to mutate gene " + c)
+  }
+
+  /**
+   * If possible, simplifies the given condition by returning a novel Condition of a similar type and True.
+   * Else returns the same condition  and false.
+   */
+  def simplify(c: Condition[_], minVal: Double, maxVal: Double): (Condition[_], Boolean) = c match {
+
+    // x <= 100 with x in [...:100] => x = #
+    case LowerThanIntCondition(a, v) if v == maxVal ⇒ (WildCardIntCondition(a), true)
+    case LowerThanFloatCondition(a, v) if v == maxVal ⇒ (WildCardFloatCondition(a), true)
+
+    // x <= 2 with x in [2:...] => x == 2
+    case LowerThanIntCondition(a, v) if v == minVal ⇒ (EqualToIntCondition(a, v), true)
+    case LowerThanFloatCondition(a, v) if v == minVal ⇒ (EqualToFloatCondition(a, v), true)
+
+    // x >= 2 with x in [2:...] => x = #
+    case GreaterThanIntCondition(a, v) if v == minVal ⇒ (WildCardIntCondition(a), true)
+    case GreaterThanFloatCondition(a, v) if v == minVal ⇒ (WildCardFloatCondition(a), true)
+
+    // x >= 100 with x in [1:100] => x = 100
+    case GreaterThanIntCondition(a, v) if v == maxVal ⇒ (EqualToIntCondition(a, v), true)
+    case GreaterThanFloatCondition(a, v) if v == maxVal ⇒ (EqualToFloatCondition(a, v), true)
+
+    // don't change anything
+    case _ ⇒ (c, false)
   }
 
 }

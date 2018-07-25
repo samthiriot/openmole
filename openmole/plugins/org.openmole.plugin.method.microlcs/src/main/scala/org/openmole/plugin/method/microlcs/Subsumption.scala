@@ -76,7 +76,11 @@ object Subsumption extends JavaLogger {
    * @return
    */
   @tailrec
-  def compareRules(epsilons: Array[Double], rulesAfter: List[ClassifierRule], rulesBefore: List[ClassifierRule]): List[ClassifierRule] = rulesAfter match {
+  def compareRules(
+    epsilons:    Array[Double],
+    rulesAfter:  List[ClassifierRule],
+    rulesBefore: List[ClassifierRule] = List()
+  ): List[ClassifierRule] = rulesAfter match {
     case Nil ⇒ rulesAfter ::: rulesBefore
     case r :: tail ⇒
       //System.out.println("working on rule " + r)
@@ -86,7 +90,6 @@ object Subsumption extends JavaLogger {
       val (r3, tailUpdated) = absorbSubsumed(r2, epsilons, tail)
       compareRules(epsilons, tailUpdated, rulesBeforeUpdated ::: List(r3))
   }
-  def compareRules(epsilons: Array[Double], rules: List[ClassifierRule]): List[ClassifierRule] = compareRules(epsilons, rules, List())
 
   def apply(
     microMinimize: Seq[Val[Double]],
@@ -100,9 +103,12 @@ object Subsumption extends JavaLogger {
       val rules: Array[ClassifierRule] = context(varRules)
 
       //System.out.println("Applying subsumption on " + rules.length + " rules " + rules.map(_.name).mkString(","))
+      val mins = context(DecodeEntities.varMin)
+      val maxs = context(DecodeEntities.varMax)
 
       val rulesWithoutDoubles = rules.toSet
-      val rulesShuffled = rulesWithoutDoubles.toList.sortBy(_.id).toArray
+      val rulesSimplified = rulesWithoutDoubles.map(ClassifierRule.simplify(_, mins, maxs))
+      val rulesShuffled = rulesSimplified.toList.sortBy(_.id).toArray
       //rng().shuffle(rulesWithoutDoubles.toList).toArray
 
       System.out.println("Applying subsumption on " + rulesShuffled.length + " unique rules " + rulesShuffled.map(_.name).mkString(","))

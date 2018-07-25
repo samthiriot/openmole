@@ -26,6 +26,8 @@ import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
 import org.openmole.tool.random.RandomProvider
 
+import scala.annotation.tailrec
+
 /**
  * Takes rules and entities,
  * and elaborates the initial plans to explore
@@ -49,6 +51,27 @@ object GenerateInitPlans extends JavaLogger {
       (r1, r2) ⇒ r1.performanceAggregated(i) < r2.performanceAggregated(i)
     )
 
+  def biasedWheelForRule(rules: Array[ClassifierRule])(rng: RandomProvider): ClassifierRule = {
+    val randd = rng().nextDouble()
+    val idx = math.floor((1 - math.sin(1.55 * randd + math.Pi / 2)) * rules.length).toInt
+    System.out.println("idx: " + idx + "/" + rules.length)
+    rules(math.min(idx, rules.length))
+  }
+
+  @tailrec
+  def simplifyRules(rules: List[ClassifierRule], acc: List[ClassifierRule] = List()): Array[ClassifierRule] = rules match {
+    case Nil ⇒ acc.toArray
+    case r :: tail ⇒
+      if (tail.exists(o ⇒ r.sameActions(o) && o.subsums(r))) {
+        // this rule is subsumed by another rule with similar actions; let's ignore it
+        simplifyRules(tail, acc)
+      }
+      else {
+        // this rule is not subsumed; let's keep it
+        simplifyRules(tail, acc :+ r)
+      }
+  }
+
   def elaboratePlan(
     id:                Int,
     rulesSelected:     Array[ClassifierRule],
@@ -63,7 +86,9 @@ object GenerateInitPlans extends JavaLogger {
         rulesSelected.slice(0, rulesSelected.length - 1)
           .map(ClassifierRule.mutateProportion(_, proportions)) :+ rulesSelected(rulesSelected.length - 1)
 
-      MacroGene(id, rulesWithRandomProportions)
+      val rulesWithoutDouble = simplifyRules(rulesWithRandomProportions.toList)
+
+      MacroGene(id, rulesWithoutDouble)
 
     case e :: entities ⇒
       val rulesMatching = rulesAll.filter(r ⇒ r.matches(e))
@@ -86,11 +111,14 @@ object GenerateInitPlans extends JavaLogger {
         )*/
 
         // we order them according to their difference of actions and also decreasing generality
-        rulesMatching.sortWith(
+        val rulesSortedByOtherActionsAndGenericity = rulesMatching.sortWith(
           (r1, r2) ⇒ r1.generalityIndice() > r2.generalityIndice()
         ).sortWith(
             (r1, r2) ⇒ rulesSelected.map(r1.distanceActions(_)).sum > rulesSelected.map(r2.distanceActions(_)).sum
-          )(0)
+          )
+
+        rulesSortedByOtherActionsAndGenericity(0)
+        //biasedWheelForRule(rulesSortedByOtherActionsAndGenericity)(rng)
 
       }
 

@@ -18,10 +18,7 @@
 package org.openmole.plugin.method.microlcs
 
 import org.openmole.core.context.{ Context, Val, Variable }
-import org.openmole.core.expansion.FromContext
 import org.openmole.core.fileservice.FileService
-import org.openmole.core.workflow.domain.{ Bounds, Fix, Sized }
-import org.openmole.core.workflow.sampling.Factor
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
 import org.openmole.tool.random.RandomProvider
@@ -41,7 +38,7 @@ case class MacroGene(
 
   override def toString: String = "Plan " + name + ": " +
     performanceToString() +
-    "\n\t" + rules.map(_.toString).mkString("\n\telse ")
+    "\n\t     " + rules.map(_.toStringWithoutPerformance).mkString("\n\telse ")
 }
 
 object MacroGene extends JavaLogger {
