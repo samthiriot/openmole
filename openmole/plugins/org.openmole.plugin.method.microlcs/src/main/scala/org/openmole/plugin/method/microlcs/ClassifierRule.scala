@@ -273,9 +273,8 @@ object ClassifierRule {
    * Returns a copy of the original classifier.
    */
   def mutateConditionOrProportion(r: ClassifierRule, mins: Array[Double], maxs: Array[Double], maxId: Int, proportions: Seq[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
-    val randd = rng().nextDouble()
 
-    val mutated = if (randd <= 1.0 / (1 + r.conditions.length)) {
+    val mutated = if (!proportions.isEmpty && (rng().nextDouble() <= 1.0 / (1 + r.conditions.length))) {
       //mutateId(r, maxId)
       mutateProportion(r, proportions)
     }
