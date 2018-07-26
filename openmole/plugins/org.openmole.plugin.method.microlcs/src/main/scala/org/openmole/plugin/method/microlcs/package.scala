@@ -62,6 +62,20 @@ package object microlcs {
 
   implicit def scope = DefinitionScope.Internal
 
+  def weightedWheel[T](elems: Array[T], weights: Array[Double])(rng: RandomProvider): T = {
+
+    val total: Double = weights.sum
+    val r: Double = rng().nextDouble() * total
+
+    var cumulated = 0.0
+    var i = 0
+    while ((i < elems.length - 1) && (cumulated < r)) {
+      cumulated += weights(i)
+      i += 1
+    }
+    elems(i)
+  }
+
   case class MicroCharacteristic(prototype: Val[Array[T]] forSome { type T })
 
   object MicroCharacteristic {

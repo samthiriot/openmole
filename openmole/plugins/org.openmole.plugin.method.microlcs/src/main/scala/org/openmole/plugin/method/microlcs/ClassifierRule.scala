@@ -191,9 +191,14 @@ object ClassifierRule {
    * the mutation of 0.5 will give 0.25 or 0.75 . Returns a copy of the classifier.
    */
   def mutateProportion(r: ClassifierRule, proportions: Seq[Double])(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
-    val rand = rng()
+    if (proportions.isEmpty) {
+      r
+    } else
+    {
 
-    /*
+      val rand = rng()
+
+      /*
     // pick up another random proportion
     val currentIdx = proportions.indexOf(r.proportion)
     val novelProportion = if (currentIdx == 0) {
@@ -213,15 +218,17 @@ object ClassifierRule {
     }
     */
 
-    val potentialProportions = proportions.filterNot(_ == r.proportion)
-    val novelProportion = potentialProportions(rng().nextInt(potentialProportions.length))
+      val potentialProportions = proportions.filterNot(_ == r.proportion)
+      val novelProportion = potentialProportions(rng().nextInt(potentialProportions.length))
 
-    // return a copy of this classifier with a different proportion
-    r.copy(
-      name = getNextName(),
-      proportion = novelProportion,
-      performance = Seq()
-    )
+      // return a copy of this classifier with a different proportion
+      r.copy(
+        name = getNextName(),
+        proportion = novelProportion,
+        performance = Seq()
+      )
+
+    }
   }
 
   /*
@@ -274,7 +281,7 @@ object ClassifierRule {
    */
   def mutateConditionOrProportion(r: ClassifierRule, mins: Array[Double], maxs: Array[Double], maxId: Int, proportions: Seq[Double], context: Context)(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
 
-    val mutated = if (!proportions.isEmpty && (rng().nextDouble() <= 1.0 / (1 + r.conditions.length))) {
+    val mutated = if (proportions.length > 0 && (rng().nextDouble() <= 1.0 / (1 + r.conditions.length))) {
       //mutateId(r, maxId)
       mutateProportion(r, proportions)
     }

@@ -117,6 +117,12 @@ object GenerateInitPlans extends JavaLogger {
             (r1, r2) ⇒ rulesSelected.map(r1.distanceActions(_)).sum > rulesSelected.map(r2.distanceActions(_)).sum
           )
 
+        // TODO biased wheel
+        /*
+        weightedWheel(
+          rulesSortedByOtherActionsAndGenericity,
+          (rulesSortedByOtherActionsAndGenericity.length - 1 to 0 by -1).map(_ * 2.0).toArray
+        )*/
         rulesSortedByOtherActionsAndGenericity(0)
         //biasedWheelForRule(rulesSortedByOtherActionsAndGenericity)(rng)
 

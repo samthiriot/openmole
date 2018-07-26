@@ -40,7 +40,7 @@ object Matching extends JavaLogger {
     }
     else {
       val r :: tail = matching
-      if (rng().nextDouble() <= r.proportion) {
+      if (r.proportion == 1.0 || rng().nextDouble() <= r.proportion) {
         r
       }
       else
@@ -79,7 +79,14 @@ object Matching extends JavaLogger {
           // there are several rules matching; and we are not deterministic.
           // let's pick up a random one
           // note we ignore the proportion here
-          (matching(rng().nextInt(matching.length)), false)
+
+          // uniform selection here:
+          // (matching(rng().nextInt(matching.length)), false)
+
+          // bias the selection:
+          // we prefer to select rules which were not tested a lot
+          val weights = matching.map(r ⇒ 100 - math.log(1 + r.applications()))
+          (weightedWheel(matching, weights)(rng), false)
         }
       }
       val rulesAvailableUpdated = if (createdRule) { rulesAvailable :+ r } else rulesAvailable
