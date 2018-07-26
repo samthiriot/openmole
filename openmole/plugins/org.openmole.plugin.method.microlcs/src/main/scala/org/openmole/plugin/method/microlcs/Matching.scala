@@ -85,7 +85,7 @@ object Matching extends JavaLogger {
 
           // bias the selection:
           // we prefer to select rules which were not tested a lot
-          val weights = matching.map(r ⇒ 100 - math.log(1 + r.applications()))
+          val weights = matching.map(r ⇒ 100 - math.log(1 + r.applications))
           (weightedWheel(matching, weights)(rng), false)
         }
       }

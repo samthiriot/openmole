@@ -60,7 +60,7 @@ object ExportRules extends JavaLogger {
       val rules: Array[ClassifierRule] = context(varRules)
 
       // remove the rules with no experience
-      val rulesFiltered: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() > 0))
+      val rulesFiltered: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications > 0))
 
       System.out.println("preparing " + rulesFiltered.length + " rules for exportation")
 
@@ -80,7 +80,7 @@ object ExportRules extends JavaLogger {
             rulesFiltered.map(r ⇒ r.performanceAggregated(i))
           )
         } ++ List(
-          Variable(varCount, rulesFiltered.map(r ⇒ r.applications())),
+          Variable(varCount, rulesFiltered.map(r ⇒ r.applications)),
           Variable(varIterationRule, rulesFiltered.map(_ ⇒ iteration))
         )
 

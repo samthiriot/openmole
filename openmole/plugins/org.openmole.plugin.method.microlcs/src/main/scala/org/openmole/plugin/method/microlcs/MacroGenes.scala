@@ -30,10 +30,12 @@ import org.openmole.tool.random.RandomProvider
  * evaluated over one or more macro indicators
  */
 case class MacroGene(
-  id:                       Int,
-  name:                     String,
-  rules:                    Array[ClassifierRule],
-  override var performance: Seq[Seq[Double]] //,
+  id:                 Int,
+  name:               String,
+  rules:              Array[ClassifierRule],
+  override var means: Seq[Double]           = Seq(),
+  override var min:   Seq[Double]           = Seq(),
+  override var max:   Seq[Double]           = Seq()
 ) extends HasMultiObjectivePerformance {
 
   override def toString: String = "Plan " + name + ": " +
@@ -100,7 +102,7 @@ object MacroGene extends JavaLogger {
     val updated = p.copy(
       id = lastId,
       name = nameForId(lastId),
-      performance = Seq(),
+      means = Seq(), min = Seq(), max = Seq(),
       rules = rulesMutated
     )
 

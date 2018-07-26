@@ -60,23 +60,36 @@ object EvaluateMacro extends JavaLogger {
       val plan: MacroGene = context(varPlanSimulated)
 
       val rulesUsedUnique = rulesUsed.toSet
+      val rulesNotUsed = plan.rules.filterNot(rulesUsedUnique)
 
       // update the plan: if a rule was not used in the plan, we simplify the plan
-      val planUpdated: MacroGene = if (plan.rules.filterNot(rulesUsedUnique).isEmpty) {
+      val planUpdated: MacroGene = if (rulesNotUsed.isEmpty) {
         plan
       }
       else {
-        System.out.println("the rules " + plan.rules.filterNot(rulesUsedUnique).map(_.name).mkString(",") +
+        System.out.println("the rules " + rulesNotUsed.map(_.name).mkString(",") +
           " of plan " + plan.name + " where not used, let's remove them")
         plan.copy(
           rules = plan.rules.filter(rulesUsedUnique)
         )
       }
 
+      // update the plan: if a rule was used (covering) but not part of the initial plan, we upgrade the plan
+      val novelRules = rulesUsedUnique diff planUpdated.rules.toSet
+      val planUpgraded: MacroGene = if (novelRules.isEmpty) {
+        planUpdated
+      }
+      else {
+        System.out.println("the plan " + planUpdated.name + " was updated with one more rule")
+        planUpdated.copy(
+          rules = planUpdated.rules ++ novelRules.toList
+        )
+      }
+
       //System.out.println("evaluating the result of the test of plan: " + plan)
 
       // learn for the plan
-      planUpdated.addPerformance(macroIndicatorToMinimize ++ macroIndicatorToMaximize)
+      planUpgraded.addPerformance(macroIndicatorToMinimize ++ macroIndicatorToMaximize)
 
       // learn rules as well !
 
@@ -104,7 +117,7 @@ object EvaluateMacro extends JavaLogger {
       List(
         Variable(varRules, (rulesUsed ++ rulesUnused).toSet.toArray),
         Variable(varIterations, iteration + 1),
-        Variable(varPlanSimulated, planUpdated)
+        Variable(varPlanSimulated, planUpgraded)
       )
 
     } set (

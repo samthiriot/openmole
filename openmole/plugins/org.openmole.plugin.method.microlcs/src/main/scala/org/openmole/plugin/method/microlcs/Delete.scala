@@ -47,8 +47,8 @@ object Delete extends JavaLogger {
       // ... the rules used for the exploration
       val rules: Array[ClassifierRule] = context(varRules)
 
-      val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() > 0))
-      val rulesNonTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() == 0))
+      val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications > 0))
+      val rulesNonTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications == 0))
 
       // what is the expected proportion of rules we want to maintain ?
       val proportionNonTested: Double = 0.3

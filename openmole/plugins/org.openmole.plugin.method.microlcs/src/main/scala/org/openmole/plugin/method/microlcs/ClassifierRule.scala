@@ -85,13 +85,14 @@ abstract class AbstractClassifier extends HasMultiObjectivePerformance {
 }
 
 case class ClassifierRule(
-  id:   Int,
-  name: String,
-  //conditionId:              ConditionId,
-  conditions:               Array[Condition[_]],
-  actions:                  Array[Variable[Q] forSome { type Q }],
-  proportion:               Double,
-  override var performance: Seq[Seq[Double]]
+  id:                 Int,
+  name:               String,
+  conditions:         Array[Condition[_]],
+  actions:            Array[Variable[Q] forSome { type Q }],
+  proportion:         Double,
+  override var means: Seq[Double]                           = Seq(),
+  override var min:   Seq[Double]                           = Seq(),
+  override var max:   Seq[Double]                           = Seq()
 ) extends AbstractClassifier
 
 object ClassifierRule {
@@ -122,9 +123,7 @@ object ClassifierRule {
       // micro actions are random
       _actions.map(a ⇒ Variable.unsecure(a.prototype, a.makeRandomValue(context))).toArray, // TODO
       // initially a rule always match everything
-      1.0,
-      // at the beginning we don't know its performance
-      Seq()
+      1.0
     )
   }
 
@@ -142,13 +141,13 @@ object ClassifierRule {
         name = getNextName(),
         conditions = a.conditions.slice(0, cutoffCondition) ++ b.conditions.slice(cutoffCondition, b.conditions.length),
         actions = a.actions.slice(0, cutoffActions) ++ b.actions.slice(cutoffActions, b.conditions.length),
-        performance = Seq()
+        means = Seq(), min = Seq(), max = Seq()
       ),
         b.copy(
           name = getNextName(),
           conditions = b.conditions.slice(0, cutoffCondition) ++ a.conditions.slice(cutoffCondition, b.conditions.length),
           actions = b.actions.slice(0, cutoffActions) ++ a.actions.slice(cutoffActions, b.conditions.length),
-          performance = Seq()
+          means = Seq(), min = Seq(), max = Seq()
         )
     )
   }
@@ -162,7 +161,7 @@ object ClassifierRule {
       conditions = r.conditions.slice(0, idxChange) ++
         Array(Condition.mutate(r.conditions(idxChange), mins(idxChange), maxs(idxChange))) ++
         r.conditions.slice(idxChange + 1, r.conditions.length),
-      performance = Seq()
+      means = Seq(), min = Seq(), max = Seq()
     )
     // debug: System.out.println("=>  " + res)
     res
@@ -182,7 +181,7 @@ object ClassifierRule {
               microActions(idxChange).makeRandomValue(context)
             )) ++
             r.actions.slice(idxChange + 1, r.conditions.length),
-      performance = Seq()
+      means = Seq(), min = Seq(), max = Seq()
     )
   }
 
@@ -191,10 +190,10 @@ object ClassifierRule {
    * the mutation of 0.5 will give 0.25 or 0.75 . Returns a copy of the classifier.
    */
   def mutateProportion(r: ClassifierRule, proportions: Seq[Double])(implicit rng: RandomProvider, newFile: NewFile, fileService: FileService): ClassifierRule = {
-    if (proportions.isEmpty) {
+    if (proportions.isEmpty) {
       r
-    } else
-    {
+    }
+    else {
 
       val rand = rng()
 
@@ -225,7 +224,7 @@ object ClassifierRule {
       r.copy(
         name = getNextName(),
         proportion = novelProportion,
-        performance = Seq()
+        means = Seq(), min = Seq(), max = Seq()
       )
 
     }

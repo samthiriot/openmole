@@ -27,12 +27,21 @@ import scala.annotation.tailrec
  */
 trait HasMultiObjectivePerformance {
 
-  var performance: Seq[Seq[Double]]
+  //var performance: Seq[Seq[Double]]
+  var applications: Int = 0
 
+  // the mean value for each criteria, computer incrementally https://math.stackexchange.com/questions/106313/regular-average-calculated-accumulatively
+  var means: Seq[Double]
+
+  var min: Seq[Double]
+  var max: Seq[Double]
+
+  /*
   def applications(): Int = {
     if (performance.isEmpty) { 0 }
     else { performance(0).length }
   }
+  */
 
   def dominatesPareto(other: HasMultiObjectivePerformance): Boolean = {
     val perfMine = performanceAggregated()
@@ -48,31 +57,48 @@ trait HasMultiObjectivePerformance {
     zipped.forall { case (m, o) ⇒ m >= o }
   }
 
-  def performanceAggregated() = performance.map(vals ⇒ vals.sum / vals.length)
+  def performanceAggregated() = means // performance.map(vals ⇒ vals.sum / vals.length)
 
-  def performanceAggregated(i: Int) = performance(i).sum / performance(i).length
+  def performanceAggregated(i: Int) = means(i) // performance(i).sum / performance(i).length
 
   def addPerformance(exp: Seq[Double]) = {
-    if (performance.isEmpty) {
+    applications = applications + 1
+    if (means.isEmpty) {
       // we had no perf; let's create it
-      performance = exp.map(v ⇒ List(v))
+      //means = exp.map(v ⇒ List(v))
+      means = exp
+      min = exp
+      max = exp
     }
     else {
       // we have perf: let's just update it
-      performance = performance.zipWithIndex
-        .map { case (l, i) ⇒ l :+ exp(i) }
+      //means = performance.zipWithIndex
+      //  .map { case (l, i) ⇒ l :+ exp(i) }
+
+      means = means.zipWithIndex.map { case (m, i) ⇒ m + (exp(i) - m) / applications }
+
+      min = min.zipWithIndex.map { case (m, i) ⇒ math.min(m, exp(i)) }
+      max = max.zipWithIndex.map { case (m, i) ⇒ math.max(m, exp(i)) }
+
     }
   }
 
   def performanceToString() = {
-    if (performance.isEmpty) "(never evaluated)"
-    else "(" + performance(0).length + ") [" + performanceAggregated().map(v ⇒ v.toString).mkString(",") + "]"
+    if (applications == 0) "(never evaluated)"
+    else "(" + applications + ") [" + means.map(v ⇒ v.toString).mkString(",") + "]"
   }
 
   def absorb[T <: HasMultiObjectivePerformance](other: T): T = {
 
     // integrate the performance of the other
-    performance = performance.zipWithIndex.map { case (p, i) ⇒ p ++ other.performance(i) }
+    //performance = performance.zipWithIndex.map { case (p, i) ⇒ p ++ other.performance(i) }
+
+    // update the means
+    means = means.zipWithIndex.map { case (m1, i) ⇒ (m1 * applications + other.performanceAggregated(i) * other.applications) / (applications + other.applications) }
+    min = min.zipWithIndex.map { case (m, i) ⇒ math.min(m, other.min(i)) }
+    max = max.zipWithIndex.map { case (m, i) ⇒ math.max(m, other.max(i)) }
+
+    applications = applications + other.applications
 
     this.asInstanceOf[T]
 

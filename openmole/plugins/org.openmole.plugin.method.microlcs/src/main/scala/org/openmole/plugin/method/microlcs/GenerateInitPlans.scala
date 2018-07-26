@@ -175,7 +175,7 @@ object GenerateInitPlans extends JavaLogger {
       System.out.println("Generating the " + maxrules + " initial plans to be explored")
 
       // keep only the rules which have been tested
-      val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications() > 0))
+      val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications > 0))
 
       // also, only keep the n best Pareto optimal solutions
       val rulesRankedPareto: Seq[Iterable[ClassifierRule]] = HasMultiObjectivePerformance.detectParetoFronts(rulesTested)

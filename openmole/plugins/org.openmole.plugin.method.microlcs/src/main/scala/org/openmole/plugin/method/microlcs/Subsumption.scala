@@ -115,11 +115,11 @@ object Subsumption extends JavaLogger {
 
       val minPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
         i ⇒ rulesShuffled.map(
-          r ⇒ r.performance(i).min
+          r ⇒ r.min(i)
         ).min).toArray
       val maxPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
         i ⇒ rulesShuffled.map(
-          r ⇒ r.performance(i).max
+          r ⇒ r.max(i)
         ).max).toArray
 
       val epsilons = (minPerIndicator zip maxPerIndicator).map { case (min, max) ⇒ (max - min) / 100.0 }
@@ -133,7 +133,7 @@ object Subsumption extends JavaLogger {
       val rulesUpdated = compareRules(epsilons, rulesShuffled.toList)
 
       System.out.println("Rules after subsumption (capitalizing " +
-        rulesUpdated.map(r ⇒ r.performance(0).length).sum + " simulations):\n" +
+        rulesUpdated.map(r ⇒ r.applications).sum + " simulations):\n" +
         ClassifierRule.toPrettyString(rulesUpdated))
 
       System.out.println("Subsumption reduced rules from " + rulesShuffled.length + " to " + rulesUpdated.length + " rules")

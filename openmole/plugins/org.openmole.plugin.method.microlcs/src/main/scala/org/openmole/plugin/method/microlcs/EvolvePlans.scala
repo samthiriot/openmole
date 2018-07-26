@@ -38,7 +38,7 @@ object EvolvePlans extends JavaLogger {
       (p.rules zip q.rules).forall {
         case (a, b) ⇒ (
           (a.name == b.name) || (
-            (a.proportion == b.proportion) && (a.conditions == b.conditions) && (a.actions == b.actions)
+            (a.proportion == b.proportion) && (a.sameConditions(b)) && (a.sameActions(b))
           ))
       }
 
@@ -48,16 +48,17 @@ object EvolvePlans extends JavaLogger {
     case p :: tail ⇒
       val doublesFromTail = tail.filter(rulesEquivalent(p, _))
       if (!doublesFromTail.isEmpty) {
-        System.out.println("found " + doublesFromTail.length + " doubles for plan\n" + p)
+        //System.out.println("found " + doublesFromTail.length + " doubles for plan\n" + p)
       }
       val pUpdated = (List(p) ++ doublesFromTail).reduceLeft(_.absorb(_))
       if (!doublesFromTail.isEmpty) {
+        System.out.println("absorbing " + doublesFromTail.map(_.name).mkString(",") + " into " + p.name)
         System.out.println("p updated =>\n" + pUpdated)
       }
       val tailUpdated = tail diff doublesFromTail
-      if (!doublesFromTail.isEmpty) {
+      /*if (!doublesFromTail.isEmpty) {
         System.out.println("tail from " + tail.length + " to " + tailUpdated.length)
-      }
+      }*/
       groupSimilar(tailUpdated, acc ++ List(pUpdated))
   }
 
@@ -83,15 +84,14 @@ object EvolvePlans extends JavaLogger {
 
       //System.out.println("Iteration " + iteration + " Here are the " + plans.length + " plans after evaluation:\n" + MacroGene.toPrettyString(plans))
 
-      val plansUnique = groupSimilar(plans.toList)
+      //val plansUnique = groupSimilar(plans.toList)
 
       // elitism: we conserve the best of the previous as well !
-      val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plansUnique)
+      //val bestPlans = HasMultiObjectivePerformance.detectParetoFront(plansUnique)
 
       //System.out.println("Pareto optimal plans:\n" + MacroGene.toPrettyString(bestPlans.toList.sortWith(_.performanceAggregated(0) < _.performanceAggregated(0))))
 
-      val parents = plans.toList ++ plansBefore
-
+      val parents = (plans.toList ++ plansBefore).toSet.toList
       val parentsUnique = groupSimilar(parents)
 
       val parentsRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(parentsUnique.toArray)
@@ -101,7 +101,7 @@ object EvolvePlans extends JavaLogger {
       System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(5)))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
-      val parentsSelected: Iterable[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, parentsRankedPareto.toList)(rng)
+      val parentsSelected: List[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, parentsRankedPareto.toList)(rng).toList
 
       // we can do crossover between rules which are of similar size
       // TODO crossover
@@ -109,7 +109,26 @@ object EvolvePlans extends JavaLogger {
       val mins: Array[Double] = context(DecodeEntities.varMin)
       val maxs: Array[Double] = context(DecodeEntities.varMax)
 
+      // TODO try again some of the best which were not tested that much
+      val goodPlansToTestAgain: Array[MacroGene] = parentsRankedPareto(0).filter(_.applications <= 5).toArray
+
       // mutate !
+      val plansMutated: Array[MacroGene] = (0 to maxrules - 1).map(i ⇒ parentsSelected(i % parentsSelected.length)).map(
+        p ⇒
+          if (p.rules.length > 1)
+            MacroGene.mutate(
+            p,
+            microActions,
+            mins,
+            maxs,
+            countEntities,
+            proportions,
+            context
+          )(rng, newFile, fileService)
+          else
+            p
+      ).toArray
+      /*
       val plansMutated = parentsSelected.map(
         p ⇒
           if (p.rules.length > 1)
@@ -125,10 +144,11 @@ object EvolvePlans extends JavaLogger {
           else
             p
       ).toArray
+      */
 
       List(
-        Variable(varPlans, plansMutated),
-        Variable(varPlansBefore, bestPlans.toArray)
+        Variable(varPlans, goodPlansToTestAgain ++ plansMutated),
+        Variable(varPlansBefore, parentsRankedPareto(0).toArray)
       )
 
     } set (
