@@ -93,7 +93,8 @@ object Subsumption extends JavaLogger {
 
   def apply(
     microMinimize: Seq[Val[Double]],
-    microMaximize: Seq[Val[Double]]
+    microMaximize: Seq[Val[Double]],
+    similarity:    Int              = 100
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("Subsumption") { (context, rng, _) ⇒
@@ -111,6 +112,8 @@ object Subsumption extends JavaLogger {
       val rulesShuffled = rulesSimplified.toList.sortBy(_.id).toArray
       //rng().shuffle(rulesWithoutDoubles.toList).toArray
 
+      val simulationsCount = context(varSimulationCount)
+
       System.out.println("Applying subsumption on " + rulesShuffled.length + " unique rules " + rulesShuffled.map(_.name).mkString(","))
 
       val minPerIndicator: Array[Double] = (0 to microMinimize.length + microMaximize.length - 1).map(
@@ -122,7 +125,7 @@ object Subsumption extends JavaLogger {
           r ⇒ r.max(i)
         ).max).toArray
 
-      val epsilons = (minPerIndicator zip maxPerIndicator).map { case (min, max) ⇒ (max - min) / 100.0 }
+      val epsilons = (minPerIndicator zip maxPerIndicator).map { case (min, max) ⇒ (max - min) / similarity.toDouble }
 
       System.out.println("Using epsilons on performance to define whether two rules can be merged or not:\n" +
         (microMinimize ++ microMaximize).zipWithIndex
@@ -133,7 +136,7 @@ object Subsumption extends JavaLogger {
       val rulesUpdated = compareRules(epsilons, rulesShuffled.toList)
 
       System.out.println("Rules after subsumption (capitalizing " +
-        rulesUpdated.map(r ⇒ r.applications).sum + " simulations):\n" +
+        rulesUpdated.map(r ⇒ r.applications).sum + " micro simulations - over " + simulationsCount + " ran total):\n" +
         ClassifierRule.toPrettyString(rulesUpdated))
 
       System.out.println("Subsumption reduced rules from " + rulesShuffled.length + " to " + rulesUpdated.length + " rules")
@@ -154,7 +157,8 @@ object Subsumption extends JavaLogger {
       (inputs, outputs) += varIterations,
       (inputs, outputs) += DecodeEntities.varEntities,
       (inputs, outputs) += DecodeEntities.varMin,
-      (inputs, outputs) += DecodeEntities.varMax
+      (inputs, outputs) += DecodeEntities.varMax,
+      (inputs, outputs) += varSimulationCount
     )
 
   }

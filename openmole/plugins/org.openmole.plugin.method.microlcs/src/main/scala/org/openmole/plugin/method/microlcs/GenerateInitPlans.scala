@@ -229,7 +229,8 @@ object GenerateInitPlans extends JavaLogger {
       outputs += varPlansBefore,
 
       (inputs, outputs) += DecodeEntities.varMin,
-      (inputs, outputs) += DecodeEntities.varMax
+      (inputs, outputs) += DecodeEntities.varMax,
+      (inputs, outputs) += varSimulationCount
 
     )
 

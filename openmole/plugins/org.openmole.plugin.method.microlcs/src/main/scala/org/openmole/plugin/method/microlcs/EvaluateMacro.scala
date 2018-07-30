@@ -141,8 +141,8 @@ object EvaluateMacro extends JavaLogger {
       (inputs, outputs) += DecodeEntities.varEntities,
       (inputs, outputs) += DecodeEntities.varMin,
       (inputs, outputs) += DecodeEntities.varMax,
-      (inputs, outputs) += varPlansBefore
-
+      (inputs, outputs) += varPlansBefore,
+      (inputs, outputs) += varSimulationCount
     )
 
   }

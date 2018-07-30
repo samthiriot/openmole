@@ -159,6 +159,7 @@ object Matching extends JavaLogger {
       // ... the current iteration
       outputs += varIterations,
 
+      (inputs, outputs) += varSimulationCount,
       (inputs, outputs) += DecodeEntities.varMin,
       (inputs, outputs) += DecodeEntities.varMax
     )

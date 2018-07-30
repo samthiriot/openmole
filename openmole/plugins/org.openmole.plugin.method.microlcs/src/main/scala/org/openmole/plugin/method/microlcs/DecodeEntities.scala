@@ -106,6 +106,9 @@ object DecodeEntities {
         // at the beginning it is the first iteration
         Variable(varIterations, 0),
 
+        // at this point we ran nothing
+        Variable(varSimulationCount, 0),
+
         Variable(varMin, min),
         Variable(varMax, max)
       )
@@ -124,6 +127,8 @@ object DecodeEntities {
         varRules,
         // ... the count of iteration
         varIterations,
+        // the count of simulations
+        varSimulationCount,
         // ... the min and max values for each characteristic
         varMin, varMax
       )

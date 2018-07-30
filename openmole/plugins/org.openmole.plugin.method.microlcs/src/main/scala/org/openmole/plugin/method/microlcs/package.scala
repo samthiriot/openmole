@@ -60,6 +60,9 @@ package object microlcs {
 
   val varPlanSimulated = Val[MacroGene]("plan_simulated", namespace = namespaceMicroLCS)
 
+  // traces how many simulations were run total
+  val varSimulationCount = Val[Int]("simulations", namespace = namespaceMicroLCS)
+
   implicit def scope = DefinitionScope.Internal
 
   def weightedWheel[T](elems: Array[T], weights: Array[Double])(rng: RandomProvider): T = {
@@ -106,7 +109,9 @@ package object microlcs {
     evaluation:           Puzzle,
     environment:          EnvironmentProvider,
     microMinimize:        Seq[Val[Double]],
-    microMaximize:        Seq[Val[Double]]
+    microMaximize:        Seq[Val[Double]],
+    count:                Int                     = 200,
+    similarity:           Int                     = 100
   //macroMinimize:        Seq[Val[Double]],
   //macroMaximize:        Seq[Val[Double]]
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
@@ -130,12 +135,12 @@ package object microlcs {
     val evaluate = Evaluate(microMinimize, microMaximize)
     val sEvaluate = Slot(evaluate) on environment
 
-    val subsume = Subsumption(microMinimize, microMaximize)
+    val subsume = Subsumption(microMinimize, microMaximize, similarity)
 
-    val evolve = Evolve(microActions, microCharacteristics, 200)
+    val evolve = Evolve(microActions, microCharacteristics, count)
     val sEvolve = Slot(evolve)
 
-    val delete = Delete(400)
+    val delete = Delete(count * 2)
     val cDelete = Capsule(delete)
     val sDelete = Slot(cDelete)
 
@@ -193,10 +198,11 @@ package object microlcs {
     microMaximize:        Seq[Val[Double]],
     macroMinimize:        Seq[Val[Double]],
     macroMaximize:        Seq[Val[Double]],
-    proportions:          Seq[Double]             = Seq(0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0)
+    proportions:          Seq[Double]             = Seq(0.01, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0),
+    count:                Int                     = 100
   )(implicit newFile: NewFile, fileService: FileService): Puzzle = {
 
-    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, proportions, 500)
+    val generateInitPlans = GenerateInitPlans(microMinimize, microMaximize, proportions, count)
     val generateInitPlansSlot = Slot(generateInitPlans)
 
     val dispatchPlans = ExplorationTask(SamplePlans())
@@ -210,7 +216,7 @@ package object microlcs {
 
     val aggregatePlans = AggregateResultsPlan()
 
-    val evolvePlans = EvolvePlans(100, microActions, proportions)
+    val evolvePlans = EvolvePlans(count, microActions, proportions)
     val sEvolvePlans = Slot(evolvePlans)
 
     val beginLoop = Capsule(EmptyTask() set (name := "begin loop"), strain = true)

@@ -51,7 +51,8 @@ sealed class DispatchEntities(
     DecodeEntities.varEntities,
     varRules,
     DecodeEntities.varMin,
-    DecodeEntities.varMax
+    DecodeEntities.varMax,
+    varSimulationCount
   )
   override def prototypes = inputs
 
@@ -64,7 +65,7 @@ sealed class DispatchEntities(
     val rules: Array[ClassifierRule] = context(varRules)
     val mins: Array[Double] = context(DecodeEntities.varMin)
     val maxs: Array[Double] = context(DecodeEntities.varMax)
-
+    val simulationsCount: Int = context(varSimulationCount)
     //System.out.println("dispatching " + rules.length + " rules: " + rules.map(r ⇒ r.name).mkString(","))
 
     List(
@@ -72,7 +73,8 @@ sealed class DispatchEntities(
       (0 to parallelEval).map(_ ⇒ Variable(DecodeEntities.varEntities, entities)),
       (0 to parallelEval).map(_ ⇒ Variable(varRules, rules)),
       (0 to parallelEval).map(_ ⇒ Variable(DecodeEntities.varMin, mins)),
-      (0 to parallelEval).map(_ ⇒ Variable(DecodeEntities.varMax, maxs))
+      (0 to parallelEval).map(_ ⇒ Variable(DecodeEntities.varMax, maxs)),
+      (0 to parallelEval).map(_ ⇒ Variable(varSimulationCount, simulationsCount))
     ).toIterator
   }
 

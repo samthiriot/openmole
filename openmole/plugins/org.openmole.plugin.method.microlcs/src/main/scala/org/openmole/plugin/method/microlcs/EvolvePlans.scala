@@ -96,7 +96,12 @@ object EvolvePlans extends JavaLogger {
 
       val parentsRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(parentsUnique.toArray)
 
-      System.out.println("we have: " + parents.length + " parents, then " + parentsUnique.length + " unique parents", "evaluating over " + parentsRankedPareto.length + " Pareto fronts")
+      val simulationsCount = context(varSimulationCount)
+
+      System.out.println("we have: " + parents.length + " parents, " +
+        "then " + parentsUnique.length + " unique parents " +
+        "evaluating over " + parentsRankedPareto.length + " Pareto fronts" +
+        " (total " + simulationsCount + " simulations)")
 
       System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(5)))
 
@@ -161,7 +166,8 @@ object EvolvePlans extends JavaLogger {
       (inputs, outputs) += varIterations,
       (inputs, outputs) += DecodeEntities.varEntities,
       (inputs, outputs) += DecodeEntities.varMin,
-      (inputs, outputs) += DecodeEntities.varMax
+      (inputs, outputs) += DecodeEntities.varMax,
+      (inputs, outputs) += varSimulationCount
 
     )
 

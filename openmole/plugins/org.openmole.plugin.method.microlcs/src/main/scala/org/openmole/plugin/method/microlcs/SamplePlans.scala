@@ -43,7 +43,8 @@ sealed class SamplePlans() extends Sampling {
     varPlans,
     varRules,
     DecodeEntities.varMin, DecodeEntities.varMax,
-    varPlansBefore
+    varPlansBefore,
+    varSimulationCount
   )
 
   override def prototypes = List(
@@ -52,7 +53,8 @@ sealed class SamplePlans() extends Sampling {
     varRules,
     varPlanSimulated,
     DecodeEntities.varMin, DecodeEntities.varMax,
-    varPlansBefore
+    varPlansBefore,
+    varSimulationCount
   )
 
   override def apply(): FromContext[Iterator[Iterable[Variable[_]]]] = FromContext { ctxt ⇒
@@ -73,6 +75,8 @@ sealed class SamplePlans() extends Sampling {
     // TODO to be removed
     val previousPlans: Array[MacroGene] = context(varPlansBefore)
 
+    val iterationsCount = context(varSimulationCount)
+
     System.out.println("Iteration " + iteration + ": dispatching the " + plans.length + " plans for evaluation")
 
     List(
@@ -85,7 +89,8 @@ sealed class SamplePlans() extends Sampling {
       // TODO virer ?
       plans.map(_ ⇒ Variable(DecodeEntities.varMin, mins)).toList,
       plans.map(_ ⇒ Variable(DecodeEntities.varMax, maxs)).toList,
-      plans.map(_ ⇒ Variable(varPlansBefore, previousPlans)).toList
+      plans.map(_ ⇒ Variable(varPlansBefore, previousPlans)).toList,
+      plans.map(_ ⇒ Variable(varSimulationCount, iterationsCount)).toList
     ).toIterator
   }
 

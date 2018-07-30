@@ -97,7 +97,8 @@ object Evaluate extends JavaLogger {
       (inputs, outputs) += varIterations,
       (inputs, outputs) += DecodeEntities.varEntities,
       (inputs, outputs) += DecodeEntities.varMin,
-      (inputs, outputs) += DecodeEntities.varMax
+      (inputs, outputs) += DecodeEntities.varMax,
+      (inputs, outputs) += varSimulationCount
     )
 
   }
