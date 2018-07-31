@@ -64,7 +64,8 @@ object EvolvePlans extends JavaLogger {
   def apply(
     maxrules:     Int,
     microActions: Seq[MicroGenes.Gene[_]],
-    proportions:  Seq[Double]
+    proportions:  Seq[Double],
+    maxIteration: Int
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
     ClosureTask("EvolvePlans") { (context, rng, _) ⇒
@@ -97,11 +98,13 @@ object EvolvePlans extends JavaLogger {
 
       val simulationsCount = context(varSimulationCount)
 
-      Log.log(Log.INFO, "we have: " + parents.length + " parents, " +
+      Log.log(Log.INFO, "Iteration " + iteration + "/" + maxIteration + " - we have: " + parents.length + " parents, " +
         "then " + parentsUnique.length + " unique parents " +
         "evaluating over " + parentsRankedPareto.length + " Pareto fronts" +
         " (total " + simulationsCount + " simulations)\n\n" +
         HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(5)))
+
+      System.out.println("Macro iteration " + iteration + "/" + maxIteration + " - here are the three first Pareto fronts:\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(3)))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
       val parentsSelected: List[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, parentsRankedPareto.toList)(rng).toList

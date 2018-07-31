@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{Context, Val}
+import org.openmole.core.context.{ Context, Val }
 import org.openmole.core.expansion.FromContext
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.domain.Bounds

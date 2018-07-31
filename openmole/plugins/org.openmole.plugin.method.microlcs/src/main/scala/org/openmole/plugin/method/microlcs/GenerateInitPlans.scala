@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{Val, Variable}
+import org.openmole.core.context.{ Val, Variable }
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
@@ -206,6 +206,7 @@ object GenerateInitPlans extends JavaLogger {
       // TODO eliminate doubles
 
       Log.log(Log.INFO, "Here are the initial plans to be explored:\n\n" + MacroGene.toPrettyString(plans))
+      System.out.println("Here are the initial plans to be explored:\n\n" + MacroGene.toPrettyString(plans))
 
       List(
         Variable(varRules, rulesFiltered),

@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{Val, Variable}
+import org.openmole.core.context.{ Val, Variable }
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
@@ -90,6 +90,7 @@ object Subsumption extends JavaLogger {
   def apply(
     microMinimize: Seq[Val[Double]],
     microMaximize: Seq[Val[Double]],
+    maxIteration:  Int,
     similarity:    Int              = 100
   )(implicit name: sourcecode.Name, definitionScope: DefinitionScope, newFile: NewFile, fileService: FileService) = {
 
@@ -102,6 +103,7 @@ object Subsumption extends JavaLogger {
       //System.out.println("Applying subsumption on " + rules.length + " rules " + rules.map(_.name).mkString(","))
       val mins = context(DecodeEntities.varMin)
       val maxs = context(DecodeEntities.varMax)
+      val iteration = context(varIterations)
 
       val rulesWithoutDoubles = rules.toSet
       val rulesSimplified = rulesWithoutDoubles.map(ClassifierRule.simplify(_, mins, maxs))
@@ -131,9 +133,10 @@ object Subsumption extends JavaLogger {
 
       val rulesUpdated = compareRules(epsilons, rulesShuffled.toList)
 
-      Log.log(Log.INFO, "\nRules after subsumption (capitalizing " +
+      val msg = "\nMicro iteration " + iteration + "/" + maxIteration + " - rules after subsumption (capitalizing " +
         rulesUpdated.map(r ⇒ r.applications).sum + " micro simulations - over " + simulationsCount + " ran total):\n" +
-        ClassifierRule.toPrettyString(rulesUpdated))
+        ClassifierRule.toPrettyString(rulesUpdated)
+      Log.log(Log.INFO, msg)
 
       Log.log(Log.FINER, "Subsumption reduced rules from " + rulesShuffled.length + " to " + rulesUpdated.length + " rules")
 

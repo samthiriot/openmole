@@ -53,7 +53,7 @@ object Delete extends JavaLogger {
 
       val rulesRankedPareto = HasMultiObjectivePerformance.detectParetoFronts(rulesTested)
 
-      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(rulesRankedPareto.take(3)))
+      //System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(rulesRankedPareto.take(3)))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
       val keptTested = HasMultiObjectivePerformance.selectParentsFromFronts(rulesTestedToKeep, rulesRankedPareto.toList)(rng).toArray

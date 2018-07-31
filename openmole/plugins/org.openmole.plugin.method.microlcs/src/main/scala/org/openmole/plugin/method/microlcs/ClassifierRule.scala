@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{Context, Variable}
+import org.openmole.core.context.{ Context, Variable }
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
@@ -128,7 +128,7 @@ object ClassifierRule extends JavaLogger {
     )
   }
 
-  def toPrettyString(rules: List[ClassifierRule]) = rules.map(r ⇒ r.toString).mkString("\n")
+  def toPrettyString(rules: List[ClassifierRule]) = rules.sortBy(-_.applications).map(r ⇒ r.toString).mkString("\n")
 
   def crossoverSinglePoint(a: ClassifierRule, b: ClassifierRule)(implicit rng: RandomProvider): (ClassifierRule, ClassifierRule) = {
 

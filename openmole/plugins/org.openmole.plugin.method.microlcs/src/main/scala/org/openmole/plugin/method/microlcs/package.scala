@@ -18,7 +18,7 @@
 
 package org.openmole.plugin.method
 
-import org.openmole.core.context.{Val, _}
+import org.openmole.core.context.{ Val, _ }
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
@@ -121,7 +121,7 @@ package object microlcs {
     val evaluate = Evaluate(microMinimize, microMaximize)
     val sEvaluate = Slot(evaluate) on environment
 
-    val subsume = Subsumption(microMinimize, microMaximize, similarity)
+    val subsume = Subsumption(microMinimize, microMaximize, iterations, similarity)
 
     val evolve = Evolve(microActions, microCharacteristics, count)
     val sEvolve = Slot(evolve)
@@ -202,7 +202,7 @@ package object microlcs {
 
     val aggregatePlans = AggregateResultsPlan()
 
-    val evolvePlans = EvolvePlans(count, microActions, proportions)
+    val evolvePlans = EvolvePlans(count, microActions, proportions, iterations)
     val sEvolvePlans = Slot(evolvePlans)
 
     val beginLoop = Capsule(EmptyTask() set (name := "begin loop"), strain = true)

@@ -36,7 +36,7 @@ object DispatchEntities extends JavaLogger {
 
 sealed class DispatchEntities(
   val parallelEval: Int
-) extends Sampling {
+) extends Sampling with JavaLogger {
 
   override def inputs = List(
     varIterations,
@@ -58,6 +58,8 @@ sealed class DispatchEntities(
     val mins: Array[Double] = context(DecodeEntities.varMin)
     val maxs: Array[Double] = context(DecodeEntities.varMax)
     val simulationsCount: Int = context(varSimulationCount)
+
+    Log.log(Log.FINER, "dispatching " + rules.length + " for " + parallelEval + " parallel simulation")
     //System.out.println("dispatching " + rules.length + " rules: " + rules.map(r ⇒ r.name).mkString(","))
 
     List(
