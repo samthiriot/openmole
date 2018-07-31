@@ -293,7 +293,7 @@ sealed trait ID {
 
 case class ExecutionId(id: String = java.util.UUID.randomUUID.toString) extends ID
 
-case class EnvironmentId(id: String = java.util.UUID.randomUUID.toString, executionId: ExecutionId) extends ID
+case class EnvironmentId(id: String = java.util.UUID.randomUUID.toString) extends ID
 
 sealed trait ErrorStateLevel {
   def name: String
@@ -347,7 +347,8 @@ case class EnvironmentState(
                              submitted: Long,
                              failed: Long,
                              networkActivity: NetworkActivity,
-                             executionActivity: ExecutionActivity
+                             executionActivity: ExecutionActivity,
+                             numberOfErrors: Int
                            )
 
 //case class Output(output: String)
@@ -802,7 +803,7 @@ object Test {
 
 case class JVMInfos(javaVersion: String, jvmImplementation: String, processorAvailable: Int, allocatedMemory: Long, totalMemory: Long)
 
-case class SequenceData(header: Seq[String], content: Seq[Array[String]])
+case class SequenceData(header: Seq[String] = Seq(), content: Seq[Array[String]]= Seq())
 
 case class WizardModelData(
                             vals: String,

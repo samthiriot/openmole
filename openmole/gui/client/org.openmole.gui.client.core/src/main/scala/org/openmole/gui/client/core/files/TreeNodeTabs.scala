@@ -38,8 +38,6 @@ import TreeNodeTabs._
 
 sealed trait TreeNodeTab {
 
-  implicit val ctx: Ctx.Owner = Ctx.Owner.safe()
-
   val safePathTab: Var[SafePath]
   val activity: Var[Activity] = Var(UnActive)
 
@@ -71,6 +69,8 @@ sealed trait TreeNodeTab {
 }
 
 object TreeNodeTab {
+
+  implicit val ctx: Ctx.Owner = Ctx.Owner.safe()
 
   def save(safePath: SafePath, editorPanelUI: EditorPanelUI, afterSave: () ⇒ Unit) =
     editorPanelUI.synchronized {
@@ -153,8 +153,9 @@ object TreeNodeTab {
     lazy val safePathTab = Var(safePath)
     lazy val isEditing = Var(initialEditing)
 
-    isEditing.trigger {
-      editor.setReadOnly(!isEditing.now)
+    Rx {
+      //isEditing.trigger {
+      editor.setReadOnly(!isEditing())
     }
 
     def content: String = editor.code
@@ -271,12 +272,12 @@ object TreeNodeTab {
               {
                 if (!sequence.now.header.isEmpty && !filteredSequence.isEmpty) {
                   val table =
-                    scaladget.bootstrapnative.Table(
-                      Some(scaladget.bootstrapnative.Row(sequence.now.header)),
+                    scaladget.bootstrapnative.DataTable(
+                      Some(scaladget.bootstrapnative.Table.Header(sequence.now.header)),
                       filteredSequence.map {
-                        scaladget.bootstrapnative.Row(_)
+                        scaladget.bootstrapnative.DataTable.DataRow(_)
                       }.toSeq,
-                      scaladget.bootstrapnative.BSTableStyle(bordered_table, emptyMod), true)
+                      scaladget.bootstrapnative.Table.BSTableStyle(bordered_table, emptyMod), true)
                   table.render(minWidth := sequence.now.header.length * 90)
                 }
                 else div()
@@ -345,6 +346,7 @@ class TreeNodeTabs() {
       _ == tab
     }
     tabs() = newTabs
+    if (tabs.now.isEmpty) temporaryControl() = div()
     newTabs.lastOption.map { t ⇒
       setActive(t)
     }

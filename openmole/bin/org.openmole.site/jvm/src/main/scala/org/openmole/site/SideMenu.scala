@@ -44,7 +44,7 @@ object SideMenu {
           m ← menus
         } yield {
           div(
-            if (m.links.isEmpty) div else div(m.preText, fontWeight := "bold", paddingTop := 20),
+            if (m.links.isEmpty) div else div(m.preText, fontWeight := "bold"),
             for {
               p ← m.links
             } yield {
@@ -55,10 +55,10 @@ object SideMenu {
       )
     )
 
-  def right(menus: SideMenu*) = build(menus, div(rightDetailButtons(220), id := "sidebar-right"))
-  def left(menus: SideMenu*) =
-    build(menus, div(leftDetailButtons(220), `class` := "sidebar-left"), Some(div(id := shared.documentationSideMenu.place)))
-
+  def right(menus: SideMenu*) = build(menus, div(rightDetailButtons(200), id := "sidebar-right"))
+  def left(menus: SideMenu*) = {
+    build(menus, div(leftDetailButtons(200), `class` := "sidebar-left"), Some(div(id := shared.documentationSideMenu.place)))
+  }
   implicit def pageToLink(p: Page): Link = Link(p.name, p.file)
 
   implicit def seqPagToSeqLink(ps: Seq[Page]): Seq[Link] = ps.map {
@@ -74,7 +74,7 @@ object SideMenu {
   val explore = SideMenu(DocumentationPages.explorePages, classIs(btn ++ btn_primary), "Available methods")
   val scale = SideMenu(DocumentationPages.scalePages, classIs(btn ++ btn_primary), "Available environments")
   val language = SideMenu(DocumentationPages.languagePages, classIs(btn ++ btn_primary), "Language")
-  val advanced = SideMenu(DocumentationPages.advancedConceptsPages, classIs(btn ++ btn_primary), "Advanced concepts")
+  val advanced = SideMenu(Seq(DocumentationPages.advancedConcepts), classIs(btn ++ btn_primary), "Advanced concepts")
   val developers = SideMenu(DocumentationPages.developersPages, classIs(btn ++ btn_primary), "Developer's documentation")
   val gettingStarted = SideMenu(DocumentationPages.gettingStartedPages, classIs(btn ++ btn_primary), "Getting started tutorials")
   val netLogoGA = SideMenu(DocumentationPages.netLogoPages, classIs(btn ++ btn_primary), "NetLogo tutorials")

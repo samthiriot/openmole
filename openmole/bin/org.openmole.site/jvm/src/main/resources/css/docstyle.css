@@ -10,12 +10,6 @@ span.hljs-tag, span.hljs-symbol{
     font-style: normal;
 }
 
-body{
-    font-family:gi;
-    font-size: 15px;
-    text-align: justify;
-}
-
 p{
   padding-top:30px;
 }
@@ -51,23 +45,42 @@ asitemap{
 border-bottom: 1px solid #eee;
 }
 
-h1{
-  color: #444;
-  font-size: 40px;
+h2{
+  color: #000;
+  font-size: 25px;
   font-weight: 100;
   margin: 0 0 24px;
-  padding-top: 30px;
+  padding-top: 50px;
   text-transform: uppercase;
-  text-align:center;
-}
-
-h2{
-  font-size:26px;
-  font-weight: bold;
 }
 
 h3{
   font-size:22px;
+}
+
+h5{color: #000;
+  font-size: 25px;
+  font-weight: 100;
+  margin: 0 0 24px;
+  padding-top: 50px;
+  text-transform: uppercase;
+}
+
+h1{
+font-size: 30px;
+font-weight: bold;
+color: #444;
+text-transform:uppercase;
+padding-bottom:20px;
+text-align:center;
+}
+
+h4{
+font-size: 30px;
+font-weight: bold;
+color: #444;
+text-transform:uppercase;
+padding-top: 40px;
 }
 
 code{
@@ -101,8 +114,11 @@ span.hljs-tag, span.hljs-symbol{
 }
 
 body{
+    color: #555;
     font-family:gi;
     font-size: 15px;
+    text-align: justify;
+    background-color: #f1f1f1;
     }
 
 p{
@@ -141,6 +157,18 @@ p{
     min-height: 800px;
 }
 
+.page-element {
+    background-color: white;
+    border-radius:5px;
+    box-shadow: 0 10px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19) !important;
+    }
+
+.index-element {
+    background-color: white;
+    width: 100%;
+    border-radius:10px;
+    box-shadow: 0 10px 16px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19) !important;
+    }
 
 #footer {
 background-color : #222;
@@ -166,6 +194,15 @@ background-color : #222;
     float: left;
 }
 
+#main-padding{
+    padding: 0px 30px 50px 30px;
+}
+
+#padding-element{
+    padding: 10px 20px 20px 10px;
+}
+
+
 /*3 Column Layout*/
 @media only screen and (min-width: 1024px) {
     .wrap {
@@ -177,6 +214,14 @@ background-color : #222;
     #main-content {
         width: 50%;
         float: left;
+    }
+
+    #main-padding{
+        padding:20px 80px 50px 80px;
+    }
+
+    #padding-element{
+         padding: 20px 50px 20px 50px;
     }
 
     .sidebar-left {
@@ -216,6 +261,14 @@ background-color : #222;
         top: 0;
     }
 
+    #main-padding{
+        padding:20px 80px 50px 80px;
+    }
+
+    #padding-element{
+        padding: 20px 50px 20px 50px;
+        }
+
     #sidebar-right {
         right: 0;
         position: fixed;
@@ -250,4 +303,5 @@ background-color : #222;
  padding-left:15px;
  margin-right:auto;
  margin-left:auto;
+ /*! background-color: yellow; */
 }
