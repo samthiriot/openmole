@@ -83,13 +83,13 @@ object Evolve extends JavaLogger {
 
       // TODO val tournamentSize =
 
-      System.out.println("Iteration " + iteration + ": starting evolution of the " + rules.length + " rules...")
+      Log.log(Log.FINE, "Iteration " + iteration + ": starting evolution of the " + rules.length + " rules...")
 
       val mins: Array[Double] = context(DecodeEntities.varMin)
       val maxs: Array[Double] = context(DecodeEntities.varMax)
 
       val rulesUpdated =
-        (0 to ((rulesCount * 2) - rules.length) / 2).map(_ ⇒ tournamentSelectionWithN(4, rules)(rng))
+        (0 to ((rulesCount * 2) - rules.length) / 2 - 1).map(_ ⇒ tournamentSelectionWithN(4, rules)(rng))
           .map { case (a: ClassifierRule, b: ClassifierRule) ⇒ ClassifierRule.crossoverSinglePoint(a, b)(rng) }
           .flatMap {
             case (c: ClassifierRule, d: ClassifierRule) ⇒ List(
@@ -98,7 +98,7 @@ object Evolve extends JavaLogger {
           }
           .toArray
 
-      System.out.println("Generated " + rulesUpdated.length + " novel rules => we now have " + (rulesUpdated.length + rules.length))
+      Log.log(Log.INFO, "Generated " + rulesUpdated.length + " novel rules => we now have " + (rulesUpdated.length + rules.length) + " rules total")
       //System.out.println(ClassifierRule.toPrettyString(rulesUpdated.toList))
       List(
         Variable(varRules, rules ++ rulesUpdated)

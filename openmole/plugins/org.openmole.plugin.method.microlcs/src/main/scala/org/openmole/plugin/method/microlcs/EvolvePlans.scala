@@ -52,8 +52,8 @@ object EvolvePlans extends JavaLogger {
       }
       val pUpdated = (List(p) ++ doublesFromTail).reduceLeft(_.absorb(_))
       if (!doublesFromTail.isEmpty) {
-        System.out.println("absorbing " + doublesFromTail.map(_.name).mkString(",") + " into " + p.name)
-        System.out.println("p updated =>\n" + pUpdated)
+        Log.log(Log.FINER, "absorbing " + doublesFromTail.map(_.name).mkString(",") + " into " + p.name + "\n" +
+                "p updated =>\n" + pUpdated)
       }
       val tailUpdated = tail diff doublesFromTail
       /*if (!doublesFromTail.isEmpty) {
@@ -98,12 +98,11 @@ object EvolvePlans extends JavaLogger {
 
       val simulationsCount = context(varSimulationCount)
 
-      System.out.println("we have: " + parents.length + " parents, " +
+      Log.log(Log.INFO,"we have: " + parents.length + " parents, " +
         "then " + parentsUnique.length + " unique parents " +
         "evaluating over " + parentsRankedPareto.length + " Pareto fronts" +
-        " (total " + simulationsCount + " simulations)")
-
-      System.out.println("\n\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(5)))
+        " (total " + simulationsCount + " simulations)\n\n" +
+        HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(5)))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
       val parentsSelected: List[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, parentsRankedPareto.toList)(rng).toList

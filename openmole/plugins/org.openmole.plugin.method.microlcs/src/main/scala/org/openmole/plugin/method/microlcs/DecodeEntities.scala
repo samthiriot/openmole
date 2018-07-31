@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Namespace, Val, Variable }
+import org.openmole.core.context.{Context, Namespace, Val, Variable}
 import org.openmole.core.expansion.FromContext
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.sampling.Sampling
@@ -35,7 +35,7 @@ import scala.concurrent.duration.DurationConversions.Classifier
  * which corresponds to the characteristics of several entities delivered independantly;
  * it converts these arrays into a unique array of entities.
  */
-object DecodeEntities {
+object DecodeEntities extends JavaLogger {
 
   // the value which will contain the list of the entities in the model
   val varEntities = Val[Array[Entity]]("entities", namespace = namespaceMicroLCS)
@@ -70,7 +70,7 @@ object DecodeEntities {
 
       val countEntities: Int = countsEntities.head
 
-      System.out.println("There are " + countEntities + " entities for this study having each " + _characteristics.size + " characteristics and " + _actions.size + " parameters")
+      Log.log(Log.INFO, "There are " + countEntities + " entities for this study having each " + _characteristics.size + " characteristics and " + _actions.size + " parameters")
 
       val _characteristicsValues: Seq[Array[_]] = _characteristics.map(v ⇒ context(v.prototype))
 

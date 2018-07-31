@@ -17,9 +17,10 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Variable }
+import org.openmole.core.context.{Context, Variable}
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workspace.NewFile
+import org.openmole.tool.logger.JavaLogger
 import org.openmole.tool.random.RandomProvider
 
 abstract class AbstractClassifier extends HasMultiObjectivePerformance {
@@ -95,7 +96,7 @@ case class ClassifierRule(
   override var max:   Seq[Double]                           = Seq()
 ) extends AbstractClassifier
 
-object ClassifierRule {
+object ClassifierRule extends JavaLogger {
 
   var lastId: Int = 0
 
@@ -300,7 +301,7 @@ object ClassifierRule {
   def simplify(r: ClassifierRule, mins: Array[Double], maxs: Array[Double]): ClassifierRule = {
     val simplifiedRules = r.conditions.zipWithIndex.map { case (c, idx) ⇒ Condition.simplify(c, mins(idx), maxs(idx)) }
     if (simplifiedRules.exists { case (c, changed) ⇒ changed }) {
-      System.out.println("rule " + r.name + " was simplified")
+      Log.log(Log.FINER, "rule " + r.name + " was simplified")
       // some of the rules were simplified, return a copy of this classifier
       r.copy(
         name = getNextName(),

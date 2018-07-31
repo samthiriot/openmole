@@ -35,7 +35,7 @@ object SamplePlans extends JavaLogger {
 
 }
 
-sealed class SamplePlans() extends Sampling {
+sealed class SamplePlans() extends Sampling with JavaLogger {
 
   override def inputs = List(
     varIterations,
@@ -77,7 +77,7 @@ sealed class SamplePlans() extends Sampling {
 
     val iterationsCount = context(varSimulationCount)
 
-    System.out.println("Iteration " + iteration + ": dispatching the " + plans.length + " plans for evaluation")
+    Log.log(Log.FINER, "Iteration " + iteration + ": dispatching the " + plans.length + " plans for evaluation")
 
     List(
       // just duplicate the same information for every run

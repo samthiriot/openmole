@@ -54,7 +54,7 @@ object GenerateInitPlans extends JavaLogger {
   def biasedWheelForRule(rules: Array[ClassifierRule])(rng: RandomProvider): ClassifierRule = {
     val randd = rng().nextDouble()
     val idx = math.floor((1 - math.sin(1.55 * randd + math.Pi / 2)) * rules.length).toInt
-    System.out.println("idx: " + idx + "/" + rules.length)
+    //  TODO check System.out.println("idx: " + idx + "/" + rules.length)
     rules(math.min(idx, rules.length))
   }
 
@@ -172,7 +172,7 @@ object GenerateInitPlans extends JavaLogger {
       val rules: Array[ClassifierRule] = context(varRules)
       val entities: Array[Entity] = context(DecodeEntities.varEntities)
 
-      System.out.println("Generating the " + maxrules + " initial plans to be explored")
+      Log.log(Log.FINE,"Generating the " + maxrules + " initial plans to be explored")
 
       // keep only the rules which have been tested
       val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications > 0))
@@ -205,7 +205,7 @@ object GenerateInitPlans extends JavaLogger {
 
       // TODO eliminate doubles
 
-      System.out.println("Here are the initial plans to be explored:\n" + MacroGene.toPrettyString(plans))
+      Log.log(Log.INFO, "Here are the initial plans to be explored:\n\n" + MacroGene.toPrettyString(plans))
 
       List(
         Variable(varRules, rulesFiltered),

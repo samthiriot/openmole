@@ -67,7 +67,7 @@ object EvaluateMacro extends JavaLogger {
         plan
       }
       else {
-        System.out.println("the rules " + rulesNotUsed.map(_.name).mkString(",") +
+        Log.log(Log.FINE, "the rules " + rulesNotUsed.map(_.name).mkString(",") +
           " of plan " + plan.name + " where not used, let's remove them")
         plan.copy(
           rules = plan.rules.filter(rulesUsedUnique)
@@ -80,7 +80,7 @@ object EvaluateMacro extends JavaLogger {
         planUpdated
       }
       else {
-        System.out.println("the plan " + planUpdated.name + " was updated with one more rule")
+        Log.log(Log.FINE,"the plan " + planUpdated.name + " was updated with one more rule")
         planUpdated.copy(
           rules = planUpdated.rules ++ novelRules.toList
         )
