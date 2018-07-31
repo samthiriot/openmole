@@ -17,14 +17,13 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Variable }
+import org.openmole.core.context.Variable
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
 import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
-import org.openmole.tool.random.RandomProvider
 
 import scala.annotation.tailrec
 
@@ -53,7 +52,7 @@ object EvolvePlans extends JavaLogger {
       val pUpdated = (List(p) ++ doublesFromTail).reduceLeft(_.absorb(_))
       if (!doublesFromTail.isEmpty) {
         Log.log(Log.FINER, "absorbing " + doublesFromTail.map(_.name).mkString(",") + " into " + p.name + "\n" +
-                "p updated =>\n" + pUpdated)
+          "p updated =>\n" + pUpdated)
       }
       val tailUpdated = tail diff doublesFromTail
       /*if (!doublesFromTail.isEmpty) {
@@ -98,7 +97,7 @@ object EvolvePlans extends JavaLogger {
 
       val simulationsCount = context(varSimulationCount)
 
-      Log.log(Log.INFO,"we have: " + parents.length + " parents, " +
+      Log.log(Log.INFO, "we have: " + parents.length + " parents, " +
         "then " + parentsUnique.length + " unique parents " +
         "evaluating over " + parentsRankedPareto.length + " Pareto fronts" +
         " (total " + simulationsCount + " simulations)\n\n" +

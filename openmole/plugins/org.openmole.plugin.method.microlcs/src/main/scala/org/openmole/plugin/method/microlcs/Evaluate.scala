@@ -17,17 +17,13 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Namespace, Val, Variable }
-import org.openmole.core.expansion.FromContext
-import org.openmole.core.workflow.builder.DefinitionScope
-import org.openmole.core.workflow.sampling.Sampling
-import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
-import org.openmole.tool.logger.JavaLogger
-import org.openmole.core.workflow.task.ClosureTask
-import org.openmole.core.workflow.dsl._
+import org.openmole.core.context.{Val, Variable}
 import org.openmole.core.fileservice.FileService
+import org.openmole.core.workflow.builder.DefinitionScope
+import org.openmole.core.workflow.dsl._
+import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
-import org.openmole.tool.random.RandomProvider
+import org.openmole.tool.logger.JavaLogger
 
 /**
  * Receives the results of simulations and the rules.

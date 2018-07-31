@@ -19,7 +19,6 @@ package org.openmole.plugin.method.microlcs
 
 import org.openmole.core.context.Variable
 import org.openmole.core.expansion.FromContext
-import org.openmole.core.workflow.dsl.{ inputs, outputs }
 import org.openmole.core.workflow.sampling.Sampling
 import org.openmole.tool.logger.JavaLogger
 

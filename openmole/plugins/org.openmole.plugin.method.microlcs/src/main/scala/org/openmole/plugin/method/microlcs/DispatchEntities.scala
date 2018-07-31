@@ -19,13 +19,7 @@ package org.openmole.plugin.method.microlcs
 
 import org.openmole.core.context.Variable
 import org.openmole.core.expansion.FromContext
-import org.openmole.core.fileservice.FileService
-import org.openmole.core.workflow.builder.DefinitionScope
-import org.openmole.core.workflow.dsl.{ inputs, _ }
 import org.openmole.core.workflow.sampling.Sampling
-import org.openmole.core.workflow.task.ClosureTask
-import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
-import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
 
 /**
@@ -39,8 +33,6 @@ object DispatchEntities extends JavaLogger {
   ) = new DispatchEntities(parallelEval)
 
 }
-
-import DispatchEntities.Log._
 
 sealed class DispatchEntities(
   val parallelEval: Int

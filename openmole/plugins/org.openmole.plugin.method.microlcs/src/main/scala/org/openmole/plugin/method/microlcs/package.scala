@@ -18,31 +18,17 @@
 
 package org.openmole.plugin.method
 
-import org.openmole.core.context.{ Context, Val, _ }
-import org.openmole.core.expansion.FromContext
-import org.openmole.core.outputmanager.OutputManager
+import org.openmole.core.context.{Val, _}
+import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
+import org.openmole.core.workflow.execution.EnvironmentProvider
 import org.openmole.core.workflow.mole._
 import org.openmole.core.workflow.puzzle._
-import org.openmole.core.workflow.sampling._
 import org.openmole.core.workflow.task._
-import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
-import org.openmole.core.workflow.validation.DataflowProblem._
-import org.openmole.core.workflow.validation._
 import org.openmole.core.workflow.transition.Slot
-import org.openmole.tool.random.RandomProvider
 import org.openmole.core.workspace.NewFile
-import org.openmole.core.fileservice.FileService
-
-import scala.reflect.runtime.universe._
-import org.openmole.core.expansion.FromContext
-import org.openmole.core.workflow.execution.EnvironmentProvider
-import org.openmole.plugin.method.microlcs.DecodeEntities.{ varMax, varMin }
-
-import Numeric.Implicits._
-import Ordering.Implicits._
-import scala.reflect.ClassTag
+import org.openmole.tool.random.RandomProvider
 
 package object microlcs {
 

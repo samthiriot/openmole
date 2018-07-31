@@ -17,17 +17,13 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Namespace, Val, Variable }
-import org.openmole.core.expansion.FromContext
-import org.openmole.core.workflow.builder.DefinitionScope
-import org.openmole.core.workflow.sampling.Sampling
-import org.openmole.core.workflow.tools.ScalarOrSequenceOfDouble
-import org.openmole.tool.logger.JavaLogger
-import org.openmole.core.workflow.task.ClosureTask
-import org.openmole.core.workflow.dsl._
+import org.openmole.core.context.{Val, Variable}
 import org.openmole.core.fileservice.FileService
+import org.openmole.core.workflow.builder.DefinitionScope
+import org.openmole.core.workflow.dsl._
+import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
-import org.openmole.tool.random.RandomProvider
+import org.openmole.tool.logger.JavaLogger
 
 import scala.annotation.tailrec
 
@@ -127,7 +123,7 @@ object Subsumption extends JavaLogger {
 
       val epsilons = (minPerIndicator zip maxPerIndicator).map { case (min, max) ⇒ (max - min) / similarity.toDouble }
 
-      Log.log(Log.INFO,"Using epsilons on performance to define whether two rules can be merged or not:\n" +
+      Log.log(Log.INFO, "Using epsilons on performance to define whether two rules can be merged or not:\n" +
         (microMinimize ++ microMaximize).zipWithIndex
         .map { case (indic, i) ⇒ indic.simpleName + " [" + minPerIndicator(i) + ":" + maxPerIndicator(i) + "] => " + epsilons(i) }
         .mkString(",\n")
@@ -135,7 +131,7 @@ object Subsumption extends JavaLogger {
 
       val rulesUpdated = compareRules(epsilons, rulesShuffled.toList)
 
-      Log.log(Log.INFO,"\nRules after subsumption (capitalizing " +
+      Log.log(Log.INFO, "\nRules after subsumption (capitalizing " +
         rulesUpdated.map(r ⇒ r.applications).sum + " micro simulations - over " + simulationsCount + " ran total):\n" +
         ClassifierRule.toPrettyString(rulesUpdated))
 

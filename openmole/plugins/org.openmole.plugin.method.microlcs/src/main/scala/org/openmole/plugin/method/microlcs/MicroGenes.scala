@@ -17,10 +17,10 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Val, Variable }
+import org.openmole.core.context.{Context, Val}
 import org.openmole.core.expansion.FromContext
 import org.openmole.core.fileservice.FileService
-import org.openmole.core.workflow.domain.{ Bounds, Fix, Sized }
+import org.openmole.core.workflow.domain.Bounds
 import org.openmole.core.workflow.sampling.Factor
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.random.RandomProvider

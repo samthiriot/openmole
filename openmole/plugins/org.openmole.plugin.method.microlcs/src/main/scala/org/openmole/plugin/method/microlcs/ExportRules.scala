@@ -17,16 +17,13 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Val, Variable }
+import org.openmole.core.context.{Val, Variable}
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
-import org.openmole.core.workflow.puzzle.Puzzle
 import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
-
-import scala.reflect.ClassTag
 
 /**
  * Changes the list of rules into basic types

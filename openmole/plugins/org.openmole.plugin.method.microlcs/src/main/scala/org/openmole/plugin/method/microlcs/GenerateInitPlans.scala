@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Val, Variable }
+import org.openmole.core.context.{Val, Variable}
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
@@ -172,7 +172,7 @@ object GenerateInitPlans extends JavaLogger {
       val rules: Array[ClassifierRule] = context(varRules)
       val entities: Array[Entity] = context(DecodeEntities.varEntities)
 
-      Log.log(Log.FINE,"Generating the " + maxrules + " initial plans to be explored")
+      Log.log(Log.FINE, "Generating the " + maxrules + " initial plans to be explored")
 
       // keep only the rules which have been tested
       val rulesTested: Array[ClassifierRule] = rules.filter(r ⇒ (r.applications > 0))

@@ -17,15 +17,13 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Val, Variable }
+import org.openmole.core.context.{Val, Variable}
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workflow.builder.DefinitionScope
 import org.openmole.core.workflow.dsl._
 import org.openmole.core.workflow.task.ClosureTask
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
-
-import scala.annotation.tailrec
 
 /**
  * Receives the results of simulations and the rules.
@@ -80,7 +78,7 @@ object EvaluateMacro extends JavaLogger {
         planUpdated
       }
       else {
-        Log.log(Log.FINE,"the plan " + planUpdated.name + " was updated with one more rule")
+        Log.log(Log.FINE, "the plan " + planUpdated.name + " was updated with one more rule")
         planUpdated.copy(
           rules = planUpdated.rules ++ novelRules.toList
         )

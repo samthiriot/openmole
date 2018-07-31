@@ -17,7 +17,7 @@
 
 package org.openmole.plugin.method.microlcs
 
-import org.openmole.core.context.{ Context, Val, Variable }
+import org.openmole.core.context.Context
 import org.openmole.core.fileservice.FileService
 import org.openmole.core.workspace.NewFile
 import org.openmole.tool.logger.JavaLogger
