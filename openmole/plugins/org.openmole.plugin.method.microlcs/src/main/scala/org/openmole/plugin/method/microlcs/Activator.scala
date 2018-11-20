@@ -18,6 +18,8 @@
 
 package org.openmole.plugin.method.microlcs
 
+import java.util.logging.{ Level, Logger }
+
 import org.openmole.core.pluginmanager._
 import org.openmole.core.preference.ConfigurationInfo
 import org.osgi.framework.BundleContext
@@ -30,6 +32,11 @@ class Activator extends PluginInfoActivator {
 
   override def start(context: BundleContext): Unit = {
     import org.openmole.core.pluginmanager.KeyWord._
+
+    // force the level of communication
+    // TODO remove this ?
+    Logger.getLogger("org.openmole.plugin.method.microlcs").setLevel(Level.ALL)
+    Logger.getLogger("org.openmole.tool.logger.JavaLogger").setLevel(Level.ALL)
 
     val keyWords: Vector[KeyWord] =
       Vector( // TODO

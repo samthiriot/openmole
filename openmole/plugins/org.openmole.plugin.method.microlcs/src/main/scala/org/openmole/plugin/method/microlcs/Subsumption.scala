@@ -105,6 +105,8 @@ object Subsumption extends JavaLogger {
       val maxs = context(DecodeEntities.varMax)
       val iteration = context(varIterations)
 
+      Log.log(Log.INFO, "simplifying rules based on mins and maxs: " + mins.mkString(",") + " " + maxs.mkString(","))
+
       val rulesWithoutDoubles = rules.toSet
       val rulesSimplified = rulesWithoutDoubles.map(ClassifierRule.simplify(_, mins, maxs))
       val rulesShuffled = rulesSimplified.toList.sortBy(_.id).toArray
@@ -138,7 +140,7 @@ object Subsumption extends JavaLogger {
         ClassifierRule.toPrettyString(rulesUpdated)
       Log.log(Log.INFO, msg)
 
-      Log.log(Log.FINER, "Subsumption reduced rules from " + rulesShuffled.length + " to " + rulesUpdated.length + " rules")
+      Log.log(Log.INFO, "Subsumption reduced rules from " + rulesShuffled.length + " to " + rulesUpdated.length + " rules")
 
       List(
         Variable(varRules, rulesUpdated.toArray)

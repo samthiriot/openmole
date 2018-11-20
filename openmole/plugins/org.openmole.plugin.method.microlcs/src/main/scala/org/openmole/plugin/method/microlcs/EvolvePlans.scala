@@ -104,7 +104,9 @@ object EvolvePlans extends JavaLogger {
         " (total " + simulationsCount + " simulations)\n\n" +
         HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(5)))
 
-      System.out.println("Macro iteration " + iteration + "/" + maxIteration + " - here are the three first Pareto fronts:\n" + HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(3)))
+      System.out.println(
+        "Macro iteration " + iteration + "/" + maxIteration + " - here are the three first Pareto fronts:\n" +
+        HasMultiObjectivePerformance.paretoFrontsToPrettyString(parentsRankedPareto.take(3)))
 
       // select n parents; they will be taken from the first front, then next, then next, etc...
       val parentsSelected: List[MacroGene] = HasMultiObjectivePerformance.selectParentsFromFronts(maxrules, parentsRankedPareto.toList)(rng).toList

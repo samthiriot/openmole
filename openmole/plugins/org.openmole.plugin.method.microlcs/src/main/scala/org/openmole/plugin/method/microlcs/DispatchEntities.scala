@@ -59,7 +59,7 @@ sealed class DispatchEntities(
     val maxs: Array[Double] = context(DecodeEntities.varMax)
     val simulationsCount: Int = context(varSimulationCount)
 
-    Log.log(Log.FINER, "dispatching " + rules.length + " for " + parallelEval + " parallel simulation")
+    Log.log(Log.INFO, "dispatching " + rules.length + " for " + parallelEval + " parallel simulation")
     //System.out.println("dispatching " + rules.length + " rules: " + rules.map(r ⇒ r.name).mkString(","))
 
     List(
