@@ -279,6 +279,9 @@ The @code{install} argument is a sequence of system commands which are executed 
 It can be used to install the packages which are required by the R libraries.
 The @code{RTask} is based on a Debian container, therefore you can use any Debian command here including @code{apt} installation tool.
 
+Note: if your instance of OpenMole is executed inside a docker container, if your installation commands require superuser privileges, 
+then you might prepend your command with @code{fakeroot}.
+
 @br
 
 The @code{libraries} argument is a sequence of libraries that are installed from the CRAN repository.
@@ -316,7 +319,6 @@ Remark: the first time you use R with @code{libraries} or @code{packages}, it ta
     // Workflow
     rTask3 hook display
     """)
-
 
 
 @h2{Example 4: A complete workflow}
